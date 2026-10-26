@@ -14,11 +14,50 @@ function synth(): SpeechSynthesis | null {
   return window.speechSynthesis
 }
 
+/**
+ * Pilih satu voice Indonesia secara DETERMINISTIK.
+ *
+ * Kenapa perlu: `getVoices()` sering punya lebih dari satu voice `id-ID`
+ * (mis. Google Bahasa Indonesia dan Microsoft Andika/Gadis) dan urutannya
+ * bisa berubah antar panggilan / setelah `voiceschanged`. Tanpa pengurutan
+ * tetap, suara bisa berganti pria-wanita di tengah sesi.
+ */
+export function pickIndonesianVoice(
+  voices: readonly SpeechSynthesisVoice[],
+): SpeechSynthesisVoice | null {
+  const candidates = voices.filter((voice) => voice.lang?.toLowerCase().startsWith('id'))
+  if (candidates.length === 0) return null
+
+  const rank = (voice: SpeechSynthesisVoice): number => {
+    if (/google/i.test(voice.name)) return 0
+    if (/female|wanita|perempuan/i.test(voice.name)) return 1
+    if (/male|pria|laki/i.test(voice.name)) return 2
+    return 3
+  }
+
+  // Kunci: urutkan dulu, baru ambil yang pertama → hasil sama setiap kali.
+  return [...candidates].sort(
+    (a, b) =>
+      rank(a) - rank(b) ||
+      a.name.localeCompare(b.name) ||
+      a.voiceURI.localeCompare(b.voiceURI),
+  )[0]
+}
+
+/**
+ * Voice yang sudah dipilih untuk sesi ini. Disimpan supaya level berikutnya
+ * memakai suara yang persis sama.
+ */
+let chosen: SpeechSynthesisVoice | null = null
+
 function indonesianVoice(): SpeechSynthesisVoice | null {
+  if (chosen) return chosen
+
   const engine = synth()
   if (!engine) return null
-  const voices = engine.getVoices()
-  return voices.find((voice) => voice.lang?.toLowerCase().startsWith('id')) ?? null
+
+  chosen = pickIndonesianVoice(engine.getVoices())
+  return chosen
 }
 
 /** Apakah perangkat punya voice Bahasa Indonesia? */
