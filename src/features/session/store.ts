@@ -59,6 +59,11 @@ interface SessionState {
   practiceBoard: Board | null
   practiceMarks: ReadonlySet<string>
 
+  /** Identitas sesi dibuat sekali saat level dipilih, supaya simpan-ulang aman. */
+  sessionId: string | null
+  sessionSaved: boolean
+
+  saveCurrentSession: () => void
   selectPatient: (patientCode: string) => void
   changePatient: () => void
   openReport: () => void
@@ -85,12 +90,21 @@ function elapsedSince(startedAt: number | null, now: number): number {
 }
 
 /**
- * Penyimpanan sesi disuntikkan dari luar (main.tsx) supaya store tetap bisa
- * diuji tanpa IndexedDB. Default: tidak menyimpan apa pun.
+ * Penyimpanan sesi bisa diganti dari luar (dipakai test), tetapi default-nya
+ * memuat Dexie saat dipanggil — bukan saat modul dievaluasi. Ini penting:
+ * kalau penyimpanan di-wire sekali di main.tsx, hot-reload store akan
+ * mengembalikannya ke no-op dan sesi hilang tanpa jejak.
  */
 type SessionSaver = (record: SessionRecord) => unknown
 
-let sessionSaver: SessionSaver = () => {}
+let sessionSaver: SessionSaver = (record) => {
+  void import('../../lib/db')
+    .then((module) => module.saveSessionRecord(record))
+    .catch(() => {
+      // Penyimpanan tidak tersedia (mode privat / kuota penuh): jangan
+      // sampai menghentikan alur pasien.
+    })
+}
 
 export function setSessionSaver(saver: SessionSaver): void {
   sessionSaver = saver
@@ -118,6 +132,36 @@ export const useSession = create<SessionState>((set, get) => ({
   runStartedAt: null,
   practiceBoard: null,
   practiceMarks: EMPTY,
+  sessionId: null,
+  sessionSaved: false,
+
+  /**
+   * Simpan sesi berjalan tanpa mengakhiri. Dipakai saat tab disembunyikan /
+   * ditutup supaya data tidak hilang, dan dipanggil juga oleh `endSession`.
+   */
+  saveCurrentSession: () => {
+    const state = get()
+    if (!state.patientCode || !state.levelId) return
+    if (state.boardScores.length === 0 || state.sessionSaved) return
+
+    const record = aggregateSession({
+      sessionId: state.sessionId ?? newSessionId(state.patientCode, Date.now()),
+      patientCode: state.patientCode,
+      level: state.levelId,
+      startedAt: state.sessionStartedAt,
+      durationMs: state.activeMs,
+      boardScores: state.boardScores,
+      completed: state.boardScores.length >= BOARDS_PER_SESSION,
+    })
+
+    set({ sessionSaved: true })
+
+    try {
+      void sessionSaver(record)
+    } catch {
+      // Penyimpanan penuh / mode privat: jangan sampai menghalangi keluar.
+    }
+  },
 
   /** Terapis memilih profil → langsung masuk pilih level. */
   selectPatient: (patientCode) =>
@@ -137,6 +181,8 @@ export const useSession = create<SessionState>((set, get) => ({
       runStartedAt: null,
       practiceBoard: null,
       practiceMarks: EMPTY,
+      sessionId: null,
+      sessionSaved: false,
     }),
 
   changePatient: () =>
@@ -148,7 +194,7 @@ export const useSession = create<SessionState>((set, get) => ({
 
   /** Terapis memilih level → papan pertama disiapkan, layar instruksi tampil. */
   selectLevel: (levelId) =>
-    set({
+    set((state) => ({
       status: 'instruction',
       levelId,
       boardIndex: 0,
@@ -164,7 +210,9 @@ export const useSession = create<SessionState>((set, get) => ({
       runStartedAt: null,
       practiceBoard: null,
       practiceMarks: EMPTY,
-    }),
+      sessionId: newSessionId(state.patientCode ?? 'PS-000', Date.now()),
+      sessionSaved: false,
+    })),
 
   /** Instruksi selesai → papan latihan (tidak dinilai) sebelum papan dinilai. */
   beginPractice: () =>
@@ -293,23 +341,8 @@ export const useSession = create<SessionState>((set, get) => ({
   endSession: () => {
     const state = get()
 
-    if (state.patientCode && state.levelId && state.boardScores.length > 0) {
-      const record = aggregateSession({
-        sessionId: newSessionId(state.patientCode, state.sessionStartedAt ?? Date.now()),
-        patientCode: state.patientCode,
-        level: state.levelId,
-        startedAt: state.sessionStartedAt,
-        durationMs: state.activeMs,
-        boardScores: state.boardScores,
-        completed: state.boardScores.length >= BOARDS_PER_SESSION,
-      })
-
-      try {
-        void sessionSaver(record)
-      } catch {
-        // Penyimpanan penuh / mode privat: jangan sampai menghalangi keluar.
-      }
-    }
+    // Simpan dulu (idempoten: sessionSaved mencegah baris ganda), lalu bersihkan.
+    get().saveCurrentSession()
 
     set({
       status: state.patientCode ? 'level-select' : 'patient-select',
@@ -327,6 +360,8 @@ export const useSession = create<SessionState>((set, get) => ({
       runStartedAt: null,
       practiceBoard: null,
       practiceMarks: EMPTY,
+      sessionId: null,
+      sessionSaved: false,
     })
   },
 }))

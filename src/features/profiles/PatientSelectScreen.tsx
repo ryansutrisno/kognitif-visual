@@ -1,6 +1,7 @@
 import { useEffect, useState, type FormEvent } from 'react'
 import { addPatient, listPatients, normalizeCode, type Patient } from '../../lib/db'
 import { id } from '../../lib/i18n/id'
+import { ReportLink } from '../report/ReportLink'
 import { useSession } from '../session/store'
 
 /** Kode berikutnya: PS-001, PS-002, … (hanya saran, tetap bisa diganti). */
@@ -69,6 +70,10 @@ export function PatientSelectScreen() {
 
   return (
     <section className="flex w-full max-w-3xl flex-col gap-6">
+      <div className="flex justify-end">
+        <ReportLink />
+      </div>
+
       <div>
         <h1 className="font-display text-3xl font-semibold tracking-tight text-ink">
           {id.patients.title}

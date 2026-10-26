@@ -10,6 +10,7 @@ import { RestScreen } from '../features/session/RestScreen'
 import { ResultScreen } from '../features/session/ResultScreen'
 import { useSession } from '../features/session/store'
 import { useAutoPause } from '../features/session/useAutoPause'
+import { useSessionPersistence } from '../features/session/useSessionPersistence'
 import { id } from '../lib/i18n/id'
 
 /**
@@ -19,6 +20,7 @@ import { id } from '../lib/i18n/id'
 export function App() {
   const status = useSession((state) => state.status)
   useAutoPause()
+  useSessionPersistence()
 
   return (
     <div className="flex min-h-dvh flex-col bg-paper">

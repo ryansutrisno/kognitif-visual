@@ -53,6 +53,9 @@ export const id = {
     pinWrong: 'PIN belum tepat. Coba lagi.',
     cancel: 'Batal',
     title: 'Laporan sesi',
+    pick: 'Pasien',
+    count: (total: number) => `${total} sesi tersimpan`,
+    noPatients: 'Belum ada profil pasien. Tambahkan profil dulu di layar awal.',
     patient: (code: string, initials: string) => (initials ? `${code} · ${initials}` : code),
     empty: 'Belum ada sesi tersimpan untuk pasien ini.',
     columns: {

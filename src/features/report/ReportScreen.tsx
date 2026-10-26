@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
-import { listPatients, listSessions, type Patient, type SessionRecord } from '../../lib/db'
 import { downloadCsv, sessionsToCsv } from '../../lib/csv'
+import { listPatients, listSessions, type Patient, type SessionRecord } from '../../lib/db'
 import { id } from '../../lib/i18n/id'
 import { useSession } from '../session/store'
 import { sessionAccuracy } from './aggregate'
@@ -19,40 +19,60 @@ function formatDate(timestamp: number): string {
 /**
  * Laporan terapis: hanya bisa dibuka lewat PIN. Isinya angka klinis yang
  * sengaja disembunyikan dari pasien (omisi kiri/kanan, indeks neglect).
+ * Pasien bisa diganti di sini supaya terapis tidak perlu keluar-masuk sesi.
  */
 export function ReportScreen() {
-  const patientCode = useSession((state) => state.patientCode)
+  const storePatient = useSession((state) => state.patientCode)
   const closeReport = useSession((state) => state.closeReport)
 
-  const [patient, setPatient] = useState<Patient | null>(null)
-  const [sessions, setSessions] = useState<SessionRecord[] | null>(null)
+  const [patients, setPatients] = useState<Patient[] | null>(null)
+  const [selected, setSelected] = useState<string | null>(storePatient)
+  // Baris disimpan bersama kode pasiennya, jadi status "memuat" cukup diturunkan
+  // saat render — tidak perlu setState sinkron di dalam effect.
+  const [loaded, setLoaded] = useState<{ code: string; rows: SessionRecord[] } | null>(null)
 
   useEffect(() => {
     let alive = true
 
-    async function load() {
-      if (!patientCode) {
-        if (alive) setSessions([])
-        return
-      }
-
-      try {
-        const [rows, patients] = await Promise.all([listSessions(patientCode), listPatients()])
+    listPatients()
+      .then((rows) => {
         if (!alive) return
-        setSessions(rows)
-        setPatient(patients.find((item) => item.code === patientCode) ?? null)
-      } catch {
-        if (alive) setSessions([])
-      }
-    }
+        setPatients(rows)
+        // Kalau belum ada pasien terpilih, buka yang pertama supaya tabel
+        // tidak kosong padahal datanya ada.
+        setSelected((current) => current ?? rows[0]?.code ?? null)
+      })
+      .catch(() => {
+        if (alive) setPatients([])
+      })
 
-    void load()
     return () => {
       alive = false
     }
-  }, [patientCode])
+  }, [])
 
+  useEffect(() => {
+    if (!selected) return
+
+    let alive = true
+
+    listSessions(selected)
+      .then((rows) => {
+        if (alive) setLoaded({ code: selected, rows })
+      })
+      .catch(() => {
+        if (alive) setLoaded({ code: selected, rows: [] })
+      })
+
+    return () => {
+      alive = false
+    }
+  }, [selected])
+
+  // Selama pasien yang dipilih belum punya data termuat, anggap masih memuat.
+  const sessions = selected && loaded?.code === selected ? loaded.rows : null
   const newest = sessions === null ? [] : [...sessions].reverse()
+  const activePatient = patients?.find((item) => item.code === selected) ?? null
 
   return (
     <section className="flex w-full max-w-5xl flex-col gap-5">
@@ -68,18 +88,44 @@ export function ReportScreen() {
           {id.report.close}
         </button>
 
-        <span className="text-sm font-medium tracking-wide text-ink-muted uppercase">
-          {patientCode
-            ? id.report.patient(patientCode, patient?.initials ?? '')
-            : id.report.title}
-        </span>
+        {selected && (
+          <span className="text-sm font-medium tracking-wide text-ink-muted uppercase">
+            {id.report.patient(selected, activePatient?.initials ?? '')}
+          </span>
+        )}
       </div>
 
       <h1 className="font-display text-2xl font-semibold tracking-tight text-ink">
         {id.report.title}
       </h1>
 
-      {sessions === null && <p className="text-base text-ink-muted">{id.patients.loading}</p>}
+      {patients !== null && patients.length === 0 && (
+        <div className="rounded-card border-2 border-[color:var(--color-line-soft)] bg-paper-raised px-5 py-6">
+          <p className="text-base text-ink-soft">{id.report.noPatients}</p>
+        </div>
+      )}
+
+      {patients !== null && patients.length > 0 && (
+        <label className="flex max-w-sm flex-col gap-1.5 text-sm font-medium text-ink-soft">
+          {id.report.pick}
+          <select
+            value={selected ?? ''}
+            onChange={(event) => setSelected(event.target.value || null)}
+            className="min-h-12 rounded-xl border-2 border-[color:var(--color-line-soft)] bg-paper px-3 text-base text-ink"
+          >
+            {patients.map((patient) => (
+              <option key={patient.code} value={patient.code}>
+                {patient.code}
+                {patient.initials ? ` · ${patient.initials}` : ''}
+              </option>
+            ))}
+          </select>
+        </label>
+      )}
+
+      {sessions === null && patients !== null && patients.length > 0 && (
+        <p className="text-base text-ink-muted">{id.patients.loading}</p>
+      )}
 
       {sessions !== null && sessions.length === 0 && (
         <div className="rounded-card border-2 border-[color:var(--color-line-soft)] bg-paper-raised px-5 py-6">
@@ -89,6 +135,8 @@ export function ReportScreen() {
 
       {sessions !== null && sessions.length > 0 && (
         <>
+          <p className="text-sm text-ink-muted">{id.report.count(sessions.length)}</p>
+
           <Trend sessions={newest.slice(0, TREND_LIMIT)} />
 
           <div className="overflow-x-auto rounded-card border-2 border-[color:var(--color-line-soft)] bg-paper-raised">
@@ -145,10 +193,7 @@ export function ReportScreen() {
             <button
               type="button"
               onClick={() =>
-                downloadCsv(
-                  `kognitif-${patientCode ?? 'semua'}.csv`,
-                  sessionsToCsv([...sessions].reverse()),
-                )
+                downloadCsv(`kognitif-${selected ?? 'semua'}.csv`, sessionsToCsv(newest))
               }
               className="inline-flex min-h-12 items-center justify-center rounded-xl border-2 border-[color:var(--color-line)] px-6 text-base font-medium text-ink"
             >

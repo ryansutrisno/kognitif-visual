@@ -4,6 +4,7 @@ import { id } from '../../lib/i18n/id'
 import { LEVELS, LEVEL_IDS } from '../levels/config'
 import type { LevelId } from '../levels/types'
 import { nextLevel, suggestsLevelUp } from '../report/aggregate'
+import { ReportLink } from '../report/ReportLink'
 import { useSession } from './store'
 
 /**
@@ -56,6 +57,7 @@ export function LevelSelectScreen() {
         >
           {id.patients.change}
         </button>
+        <ReportLink />
       </div>
 
       <div>

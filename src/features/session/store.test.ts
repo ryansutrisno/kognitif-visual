@@ -311,4 +311,27 @@ describe('store sesi', () => {
 
     expect(saved).toHaveLength(0)
   })
+
+  it('menyimpan sesi berjalan sekali saja walau dipanggil berkali-kali', () => {
+    const saved: SessionRecord[] = []
+    setSessionSaver((record) => {
+      saved.push(record as SessionRecord)
+    })
+
+    store().selectPatient('PS-001')
+    store().selectLevel(2)
+    store().beginBoard()
+    markAllTargets()
+    store().finishBoard()
+
+    // Kasus tab ditutup / disembunyikan, lalu terapis keluar juga.
+    store().saveCurrentSession()
+    store().saveCurrentSession()
+    store().endSession()
+    setSessionSaver(() => {})
+
+    expect(saved).toHaveLength(1)
+    expect(saved[0]?.patientCode).toBe('PS-001')
+    expect(saved[0]?.completed).toBe(false)
+  })
 })
