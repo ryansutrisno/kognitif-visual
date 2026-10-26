@@ -14,7 +14,7 @@ export function Dialog({ title, body, children }: DialogProps) {
         role="alertdialog"
         aria-modal="true"
         aria-label={title}
-        className="w-full max-w-md rounded-card border-2 border-[color:var(--color-line)] bg-paper-raised px-7 py-7 shadow-xl"
+        className="max-h-[calc(100dvh-2rem)] w-full max-w-md overflow-y-auto rounded-card border-2 border-[color:var(--color-line)] bg-paper-raised px-7 py-7 shadow-xl"
       >
         <h2 className="font-display text-2xl font-semibold tracking-tight text-ink">{title}</h2>
         <p className="mt-2 text-base leading-relaxed text-ink-soft">{body}</p>

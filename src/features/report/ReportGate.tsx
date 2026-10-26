@@ -52,7 +52,7 @@ export function ReportGate() {
             setPinOpen(true)
           }
         }}
-        className="rounded-xl p-1 text-ink"
+        className="grid size-11 place-items-center rounded-xl text-ink"
       >
         <LogoMark className="size-8" />
       </button>

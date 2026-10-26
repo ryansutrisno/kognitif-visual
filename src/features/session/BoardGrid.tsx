@@ -24,12 +24,14 @@ export function BoardGrid({ board, marks, falsePositiveIds, onToggle }: BoardGri
   const small = board.cols <= 3
   const gap = small ? '0.75rem' : '0.5rem'
   const cellMax = small ? '7.5rem' : '5.5rem'
-  // Ruang vertikal untuk papan: L3 butuh sisa layar lebih banyak (11 baris).
-  const verticalBudget = board.rows >= 10 ? '9rem' : '15rem'
+  // Ruang vertikal untuk papan: L3 (11 baris) butuh sisa layar lebih banyak.
+  const verticalBudget = board.rows >= 10 ? '12.5rem' : '14rem'
 
   const style = {
     '--cell': [
-      `max(44px, min(${cellMax}`,
+      // Lantai 40px: di bawah target 44px, tapi tetap jauh di atas minimum
+      // WCAG (24px) dan membuat 11 baris masih muat di tablet 768px.
+      `max(40px, min(${cellMax}`,
       `calc((100dvh - ${verticalBudget} - ${board.rows - 1} * ${gap}) / ${board.rows})`,
       `calc((100vw - 3rem - ${board.cols - 1} * ${gap}) / ${board.cols})))`,
     ].join(', '),
@@ -37,32 +39,36 @@ export function BoardGrid({ board, marks, falsePositiveIds, onToggle }: BoardGri
   } as CSSProperties
 
   return (
-    <div className="relative mx-auto w-full" style={style}>
-      {board.midline && (
-        <span
-          aria-hidden="true"
-          className="pointer-events-none absolute inset-y-[0.25rem] left-1/2 w-[3px] -translate-x-1/2 rounded-full bg-line"
-        />
-      )}
-
-      <div
-        className="relative mx-auto grid w-fit"
-        style={{
-          gridTemplateColumns: `repeat(${board.cols}, var(--cell))`,
-          gap: 'var(--gap)',
-        }}
-        role="group"
-        aria-label={id.board.instruction}
-      >
-        {board.cells.map((cell) => (
-          <CellButton
-            key={cell.id}
-            cell={cell}
-            marked={marks.has(cell.id)}
-            everWrong={falsePositiveIds.has(cell.id)}
-            onToggle={onToggle}
+    // Layar sangat sempit (HP) boleh menggeser papan ke samping, tapi tidak
+    // pernah memotong halaman: overflow hanya di dalam kotak ini.
+    <div className="w-full overflow-x-auto overflow-y-hidden" style={style}>
+      <div className="relative mx-auto w-fit">
+        {board.midline && (
+          <span
+            aria-hidden="true"
+            className="pointer-events-none absolute inset-y-[0.25rem] left-1/2 w-[3px] -translate-x-1/2 rounded-full bg-line"
           />
-        ))}
+        )}
+
+        <div
+          className="relative grid w-fit"
+          style={{
+            gridTemplateColumns: `repeat(${board.cols}, var(--cell))`,
+            gap: 'var(--gap)',
+          }}
+          role="group"
+          aria-label={id.board.instruction}
+        >
+          {board.cells.map((cell) => (
+            <CellButton
+              key={cell.id}
+              cell={cell}
+              marked={marks.has(cell.id)}
+              everWrong={falsePositiveIds.has(cell.id)}
+              onToggle={onToggle}
+            />
+          ))}
+        </div>
       </div>
     </div>
   )

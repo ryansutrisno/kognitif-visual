@@ -23,6 +23,10 @@ export function App() {
   useAutoPause()
   useSessionPersistence()
 
+  // Saat papan berjalan, chrome aplikasi disembunyikan supaya 11 baris
+  // Level 3 tetap muat tanpa scroll di tablet landscape.
+  const focusMode = status === 'running' || status === 'paused'
+
   return (
     <div className="flex min-h-dvh flex-col bg-paper">
       <a
@@ -32,21 +36,26 @@ export function App() {
         {id.a11y.skipToContent}
       </a>
 
-      <header className="flex items-center justify-between px-5 py-3 sm:px-8">
-        <div className="flex items-center gap-2 text-ink-muted">
-          <ReportGate />
-          <span className="text-sm font-medium tracking-wide uppercase">{id.app.tagline}</span>
-        </div>
-        <div className="flex items-center gap-2">
-          <span className="hidden text-sm text-ink-muted lg:inline">{id.footer.offline}</span>
-          <SoundToggle />
-          <SettingsSheet />
-        </div>
-      </header>
+      {!focusMode && (
+        <header className="flex items-center justify-between px-5 py-3 sm:px-8">
+          <div className="flex items-center gap-2 text-ink-muted">
+            <ReportGate />
+            <span className="text-sm font-medium tracking-wide uppercase">{id.app.tagline}</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <span className="hidden text-sm text-ink-muted lg:inline">{id.footer.offline}</span>
+            <SoundToggle />
+            <SettingsSheet />
+          </div>
+        </header>
+      )}
 
       <main
         id="konten"
-        className="flex flex-1 items-start justify-center px-4 py-4 sm:px-8 sm:py-6"
+        className={[
+          'flex flex-1 justify-center px-4 sm:px-8',
+          focusMode ? 'items-start py-2' : 'items-start py-4 sm:py-6',
+        ].join(' ')}
       >
         {status === 'patient-select' && <PatientSelectScreen />}
         {status === 'level-select' && <LevelSelectScreen />}
@@ -58,11 +67,13 @@ export function App() {
         {status === 'report' && <ReportScreen />}
       </main>
 
-      <footer className="px-5 pb-4 sm:px-8">
-        <p className="text-xs text-ink-muted">
-          {id.app.name} · {id.footer.version}
-        </p>
-      </footer>
+      {!focusMode && (
+        <footer className="px-5 pb-4 sm:px-8">
+          <p className="text-xs text-ink-muted">
+            {id.app.name} · {id.footer.version}
+          </p>
+        </footer>
+      )}
     </div>
   )
 }

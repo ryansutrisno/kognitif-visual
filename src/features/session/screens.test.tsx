@@ -68,8 +68,10 @@ describe('layar sesi', () => {
 
     const cells = store().board?.cells.length ?? 0
     expect(text()).toContain('Tandai semua lingkaran.')
-    // Tombol di header (suara) juga punya aria-pressed, jadi hitung di dalam main saja.
-    expect(container.querySelectorAll('main button[aria-pressed]')).toHaveLength(cells)
+    // Header aplikasi disembunyikan saat papan berjalan (mode fokus); tombol
+    // suara pindah ke bar atas papan, jadi hitung di dalam grid saja.
+    expect(container.querySelectorAll('[role="group"] button[aria-pressed]')).toHaveLength(cells)
+    expect(container.querySelector('header')).toBeNull()
   })
 
   it('menampilkan papan latihan tiga kotak sebelum papan dinilai', () => {
