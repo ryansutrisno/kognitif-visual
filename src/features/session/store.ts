@@ -1,14 +1,15 @@
 import { create } from 'zustand'
 import { getLevel } from '../levels/config'
 import { generateBoard } from '../levels/generateBoard'
+import { generatePracticeBoard } from '../levels/practice'
 import { randomSeed } from '../levels/rng'
 import type { Board, Cell, LevelId } from '../levels/types'
 import { computeScore, type Score } from './scoring'
 
 /**
  * Status sesi (blueprint): satu union, transisi hanya lewat action.
- * `level-select` = layar pilih level, `rest` = layar istirahat di antara papan.
- * `practice` disiapkan untuk papan latihan (F3) dan belum dipakai.
+ * `level-select` = layar pilih level, `rest` = layar istirahat di antara papan,
+ * `practice` = papan latihan 3 kotak yang tidak dinilai.
  */
 export type SessionStatus =
   | 'level-select'
@@ -46,7 +47,13 @@ interface SessionState {
   /** Penanda segmen berjalan; null saat tidak menghitung waktu. */
   runStartedAt: number | null
 
+  /** Papan latihan (3 kotak, tidak dinilai) — dimulai dari layar instruksi. */
+  practiceBoard: Board | null
+  practiceMarks: ReadonlySet<string>
+
   selectLevel: (levelId: LevelId) => void
+  beginPractice: () => void
+  tapPractice: (cell: Cell) => void
   beginBoard: () => void
   tap: (cell: Cell) => void
   pause: () => void
@@ -79,6 +86,8 @@ export const useSession = create<SessionState>((set) => ({
   activeMs: 0,
   boardActiveMs: 0,
   runStartedAt: null,
+  practiceBoard: null,
+  practiceMarks: EMPTY,
 
   /** Terapis memilih level → papan pertama disiapkan, layar instruksi tampil. */
   selectLevel: (levelId) =>
@@ -96,12 +105,38 @@ export const useSession = create<SessionState>((set) => ({
       activeMs: 0,
       boardActiveMs: 0,
       runStartedAt: null,
+      practiceBoard: null,
+      practiceMarks: EMPTY,
     }),
 
-  /** Instruksi selesai → papan berjalan, timer mulai. */
+  /** Instruksi selesai → papan latihan (tidak dinilai) sebelum papan dinilai. */
+  beginPractice: () =>
+    set((state) =>
+      state.status === 'instruction'
+        ? {
+            status: 'practice',
+            practiceBoard: generatePracticeBoard(randomSeed()),
+            practiceMarks: EMPTY,
+          }
+        : state,
+    ),
+
+  /** Tap di papan latihan: hanya untuk merasakan tandanya, tanpa skor. */
+  tapPractice: (cell) =>
+    set((state) => {
+      if (state.status !== 'practice') return state
+      const marks = new Set(state.practiceMarks)
+      if (marks.has(cell.id)) marks.delete(cell.id)
+      else marks.add(cell.id)
+      return { practiceMarks: marks }
+    }),
+
+  /** Instruksi/latihan selesai → papan berjalan, timer mulai. */
   beginBoard: () =>
     set((state) => {
-      if (state.status !== 'instruction' || !state.board) return state
+      if ((state.status !== 'instruction' && state.status !== 'practice') || !state.board) {
+        return state
+      }
       const now = Date.now()
       return { status: 'running', runStartedAt: now, sessionStartedAt: state.sessionStartedAt ?? now }
     }),
@@ -210,6 +245,8 @@ export const useSession = create<SessionState>((set) => ({
       activeMs: 0,
       boardActiveMs: 0,
       runStartedAt: null,
+      practiceBoard: null,
+      practiceMarks: EMPTY,
     }),
 }))
 

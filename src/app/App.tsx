@@ -1,7 +1,9 @@
 import { LogoMark } from '../components/LogoMark'
+import { SoundToggle } from '../components/SoundToggle'
 import { BoardScreen } from '../features/session/BoardScreen'
 import { InstructionScreen } from '../features/session/InstructionScreen'
 import { LevelSelectScreen } from '../features/session/LevelSelectScreen'
+import { PracticeScreen } from '../features/session/PracticeScreen'
 import { RestScreen } from '../features/session/RestScreen'
 import { ResultScreen } from '../features/session/ResultScreen'
 import { useSession } from '../features/session/store'
@@ -10,7 +12,7 @@ import { id } from '../lib/i18n/id'
 
 /**
  * Shell aplikasi. Navigasi diturunkan dari status sesi di store:
- * pilih level → instruksi → papan → hasil → (istirahat) → papan berikutnya.
+ * pilih level → instruksi → papan latihan → papan → hasil → (istirahat) → papan berikutnya.
  */
 export function App() {
   const status = useSession((state) => state.status)
@@ -30,15 +32,19 @@ export function App() {
           <LogoMark className="size-7 text-ink" />
           <span className="text-sm font-medium tracking-wide uppercase">{id.app.tagline}</span>
         </div>
-        <span className="text-sm text-ink-muted">{id.footer.offline}</span>
+        <div className="flex items-center gap-3">
+          <span className="hidden text-sm text-ink-muted sm:inline">{id.footer.offline}</span>
+          <SoundToggle />
+        </div>
       </header>
 
       <main
         id="konten"
         className="flex flex-1 items-start justify-center px-4 py-4 sm:px-8 sm:py-6"
       >
-        {(status === 'level-select' || status === 'practice') && <LevelSelectScreen />}
+        {status === 'level-select' && <LevelSelectScreen />}
         {status === 'instruction' && <InstructionScreen />}
+        {status === 'practice' && <PracticeScreen />}
         {(status === 'running' || status === 'paused') && <BoardScreen />}
         {status === 'finished' && <ResultScreen />}
         {status === 'rest' && <RestScreen />}

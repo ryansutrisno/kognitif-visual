@@ -66,7 +66,24 @@ describe('layar sesi', () => {
 
     const cells = store().board?.cells.length ?? 0
     expect(text()).toContain('Tandai semua lingkaran.')
-    expect(container.querySelectorAll('button[aria-pressed]')).toHaveLength(cells)
+    // Tombol di header (suara) juga punya aria-pressed, jadi hitung di dalam main saja.
+    expect(container.querySelectorAll('main button[aria-pressed]')).toHaveLength(cells)
+  })
+
+  it('menampilkan papan latihan tiga kotak sebelum papan dinilai', () => {
+    act(() => {
+      store().selectLevel(1)
+      store().beginPractice()
+    })
+
+    expect(text()).toContain('Coba dulu, ya')
+    expect(text()).toContain('Lanjut ke papan')
+    expect(container.querySelectorAll('main button[aria-pressed]')).toHaveLength(3)
+  })
+
+  it('tombol suara selalu tersedia di header', () => {
+    const sound = container.querySelector('header button[aria-pressed]')
+    expect(sound).not.toBeNull()
   })
 
   it('menampilkan layar hasil tanpa angka omisi dan tanpa kata salah', () => {

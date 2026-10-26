@@ -1,7 +1,9 @@
 import { useState } from 'react'
 import { Dialog } from '../../components/Dialog'
 import { id } from '../../lib/i18n/id'
+import { playCorrect, playWrong, unlockAudio } from '../../lib/audio'
 import { getLevel } from '../levels/config'
+import type { Cell } from '../levels/types'
 import { BoardGrid } from './BoardGrid'
 import { BOARDS_PER_SESSION, useSession } from './store'
 
@@ -31,6 +33,16 @@ export function BoardScreen() {
   const found = marks.size
   const targets = board.cells.reduce((count, cell) => (cell.isTarget ? count + 1 : count), 0)
   const compact = board.rows >= 10
+
+  /** Tap = gesture pertama juga; di sini audio browser dibuka lalu nada dimainkan. */
+  const handleToggle = (cell: Cell) => {
+    const wasMarked = marks.has(cell.id)
+    unlockAudio()
+    tap(cell)
+    if (wasMarked) return
+    if (cell.isTarget) playCorrect()
+    else playWrong()
+  }
 
   return (
     <section className="flex w-full flex-col gap-3">
@@ -74,7 +86,7 @@ export function BoardScreen() {
             board={board}
             marks={marks}
             falsePositiveIds={falsePositiveIds}
-            onToggle={tap}
+            onToggle={handleToggle}
           />
         </div>
 

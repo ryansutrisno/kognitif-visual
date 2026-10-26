@@ -208,4 +208,60 @@ describe('store sesi', () => {
     expect(store().boardIndex).toBe(1)
     expect(store().runStartedAt).not.toBeNull()
   })
+
+  it('papan latihan berisi tiga kotak dengan satu lingkaran', () => {
+    store().selectLevel(2)
+    store().beginPractice()
+
+    const practice = store().practiceBoard
+    expect(store().status).toBe('practice')
+    expect(practice?.cells).toHaveLength(3)
+    expect(practice?.cells.filter((cell) => cell.isTarget)).toHaveLength(1)
+    expect(practice?.midline).toBe(false)
+    expect(store().practiceMarks.size).toBe(0)
+  })
+
+  it('tap di papan latihan tidak menyentuh tanda maupun skor papan dinilai', () => {
+    store().selectLevel(1)
+    store().beginPractice()
+
+    const cell = store().practiceBoard?.cells[0]
+    if (!cell) throw new Error('papan latihan kosong')
+    store().tapPractice(cell)
+
+    expect(store().practiceMarks.has(cell.id)).toBe(true)
+    expect(store().marks.size).toBe(0)
+    expect(store().falsePositiveIds.size).toBe(0)
+    expect(store().boardScores).toHaveLength(0)
+
+    store().tapPractice(cell)
+    expect(store().practiceMarks.has(cell.id)).toBe(false)
+  })
+
+  it('papan latihan tidak bisa dimulai tanpa memilih level', () => {
+    store().beginPractice()
+    expect(store().status).toBe('level-select')
+    expect(store().practiceBoard).toBeNull()
+  })
+
+  it('selesai latihan langsung masuk papan dinilai dengan timer berjalan', () => {
+    store().selectLevel(3)
+    store().beginPractice()
+    store().beginBoard()
+
+    expect(store().status).toBe('running')
+    expect(store().runStartedAt).not.toBeNull()
+    expect(store().marks.size).toBe(0)
+    expect(store().boardScores).toHaveLength(0)
+  })
+
+  it('memilih level baru membersihkan papan latihan sebelumnya', () => {
+    store().selectLevel(1)
+    store().beginPractice()
+    store().selectLevel(2)
+
+    expect(store().status).toBe('instruction')
+    expect(store().practiceBoard).toBeNull()
+    expect(store().practiceMarks.size).toBe(0)
+  })
 })

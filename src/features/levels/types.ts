@@ -25,10 +25,11 @@ export interface Board {
 
 export type LevelId = 1 | 2 | 3
 
-export interface LevelConfig {
-  id: LevelId
-  /** Nama pendek untuk terapis, mis. "Level 1". */
-  label: string
+/**
+ * Resep papan tanpa identitas level — dipakai `generateBoard`.
+ * Level penilaian maupun papan latihan sama-sama memenuhi bentuk ini.
+ */
+export interface BoardSpec {
   rows: number
   cols: number
   /** Jumlah bentuk target (lingkaran) di papan. */
@@ -37,6 +38,12 @@ export interface LevelConfig {
   midline: boolean
   /** Bentuk yang boleh muncul sebagai distraktor. */
   distractorShapes: readonly Shape[]
+}
+
+export interface LevelConfig extends BoardSpec {
+  id: LevelId
+  /** Nama pendek untuk terapis, mis. "Level 1". */
+  label: string
 }
 
 /** Bentuk yang jadi target selama MVP. */

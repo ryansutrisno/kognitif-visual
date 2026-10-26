@@ -1,17 +1,32 @@
+import { useEffect, useMemo } from 'react'
 import { ShapeGlyph } from '../../components/ShapeGlyph'
 import { id } from '../../lib/i18n/id'
+import { speak, stopSpeaking, useVoiceAvailable } from '../../lib/speech'
 import { getLevel } from '../levels/config'
 import { useSession } from './store'
 
 /**
  * Layar instruksi sebelum papan pertama: tiga langkah singkat + satu contoh
- * visual. Suara instruksi (TTS) menyusul di F3.
+ * visual + suara Bahasa Indonesia (kalau perangkat punya voice-nya).
  */
 export function InstructionScreen() {
   const levelId = useSession((state) => state.levelId)
   const boardIndex = useSession((state) => state.boardIndex)
-  const beginBoard = useSession((state) => state.beginBoard)
+  const beginPractice = useSession((state) => state.beginPractice)
   const endSession = useSession((state) => state.endSession)
+  const voiceAvailable = useVoiceAvailable()
+
+  const script = useMemo(
+    () => `${id.guide.step1} ${id.guide.step2} ${id.guide.step3}`,
+    [],
+  )
+
+  // Baca instruksi otomatis sekali; berhenti kalau layar ditinggalkan.
+  useEffect(() => {
+    if (!voiceAvailable) return
+    speak(script)
+    return () => stopSpeaking()
+  }, [voiceAvailable, script])
 
   if (levelId === null) return null
   const config = getLevel(levelId)
@@ -52,15 +67,42 @@ export function InstructionScreen() {
           <p className="text-base text-ink-soft">{id.guide.demo}</p>
         </div>
 
-        <button
-          type="button"
-          onClick={beginBoard}
-          className="mt-8 inline-flex min-h-16 items-center justify-center rounded-xl bg-ink px-10 text-lg font-medium text-paper"
-        >
-          {id.guide.start}
-        </button>
+        <div className="mt-8 flex flex-wrap items-center gap-3">
+          <button
+            type="button"
+            onClick={beginPractice}
+            className="inline-flex min-h-16 items-center justify-center rounded-xl bg-ink px-10 text-lg font-medium text-paper"
+          >
+            {id.guide.start}
+          </button>
+
+          <button
+            type="button"
+            onClick={() => speak(script)}
+            disabled={!voiceAvailable}
+            title={voiceAvailable ? undefined : id.guide.listenUnavailable}
+            className="inline-flex min-h-16 items-center gap-2 rounded-xl border-2 border-[color:var(--color-line-soft)] px-6 text-base font-medium text-ink-soft disabled:opacity-45"
+          >
+            <SpeakerIcon />
+            {id.guide.listenAgain}
+          </button>
+        </div>
+
+        {!voiceAvailable && (
+          <p className="mt-3 text-sm text-ink-muted">{id.guide.listenUnavailable}</p>
+        )}
       </div>
     </section>
+  )
+}
+
+function SpeakerIcon() {
+  return (
+    <svg viewBox="0 0 24 24" className="size-5" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <path d="M4 9.5h3.5L12 5.5v13L7.5 14.5H4z" />
+      <path d="M16 9a4 4 0 0 1 0 6" />
+      <path d="M18.5 6.5a7.5 7.5 0 0 1 0 11" />
+    </svg>
   )
 }
 

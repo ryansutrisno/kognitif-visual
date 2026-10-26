@@ -30,6 +30,16 @@ export const id = {
     step3: 'Tap lagi kalau ingin membatalkan.',
     demo: 'Contoh: lingkaran yang sudah ditandai',
     start: 'Siap, mulai',
+    listenAgain: 'Dengar lagi',
+    listenUnavailable: 'Suara Bahasa Indonesia belum tersedia di perangkat ini.',
+  },
+
+  practice: {
+    title: 'Coba dulu, ya',
+    body: 'Tap satu bentuk untuk melihat tandanya. Bagian ini tidak dinilai.',
+    done: 'Bagus, itu caranya.',
+    hint: 'Kalau sudah siap, lanjut ke papan yang dinilai.',
+    next: 'Lanjut ke papan',
   },
 
   board: {
@@ -83,6 +93,14 @@ export const id = {
     square: 'kotak',
     triangle: 'segitiga',
     star: 'bintang',
+  },
+
+  sound: {
+    on: 'Suara aktif',
+    off: 'Suara mati',
+    mute: 'Matikan suara',
+    unmute: 'Nyalakan suara',
+    label: 'Suara',
   },
 
   footer: {

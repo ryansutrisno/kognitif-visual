@@ -1,5 +1,5 @@
 import { mulberry32, shuffle } from './rng'
-import { TARGET_SHAPE, type Board, type Cell, type LevelConfig, type Shape } from './types'
+import { TARGET_SHAPE, type Board, type BoardSpec, type Cell, type Shape } from './types'
 
 /**
  * Bangun papan deterministik dari (config, seed).
@@ -8,7 +8,7 @@ import { TARGET_SHAPE, type Board, type Cell, type LevelConfig, type Shape } fro
  *  - Sisa kotak jadi distraktor, dibagi rata antar bentuk distraktor.
  *  - Seed sama + config sama → papan identik.
  */
-export function generateBoard(config: LevelConfig, seed: number): Board {
+export function generateBoard(config: BoardSpec, seed: number): Board {
   const { rows, cols, targetCount } = config
   const total = rows * cols
 
