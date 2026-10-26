@@ -1,4 +1,5 @@
 import { SoundToggle } from '../components/SoundToggle'
+import { SettingsSheet } from '../components/SettingsSheet'
 import { PatientSelectScreen } from '../features/profiles/PatientSelectScreen'
 import { ReportGate } from '../features/report/ReportGate'
 import { ReportScreen } from '../features/report/ReportScreen'
@@ -36,9 +37,10 @@ export function App() {
           <ReportGate />
           <span className="text-sm font-medium tracking-wide uppercase">{id.app.tagline}</span>
         </div>
-        <div className="flex items-center gap-3">
-          <span className="hidden text-sm text-ink-muted sm:inline">{id.footer.offline}</span>
+        <div className="flex items-center gap-2">
+          <span className="hidden text-sm text-ink-muted lg:inline">{id.footer.offline}</span>
           <SoundToggle />
+          <SettingsSheet />
         </div>
       </header>
 

@@ -74,7 +74,8 @@
   }
 }
 
-/* Mode kontras tinggi (toggle di pengaturan, lihat F5). */
+/* Mode kontras tinggi & teks besar (toggle di pengaturan). Ditempel di <html>
+   supaya variabel dan ukuran rem ikut turun ke seluruh aplikasi. */
 @layer utilities {
   .contrast-high {
     --color-paper: #ffffff;
@@ -82,5 +83,10 @@
     --color-line-soft: #1f2937;
     --color-ink-soft: #1f2937;
     --color-ink-muted: #1f2937;
+  }
+
+  /* 1rem = 19px: semua ukuran Tailwind berbasis rem ikut membesar. */
+  .text-large {
+    font-size: 118.75%;
   }
 }

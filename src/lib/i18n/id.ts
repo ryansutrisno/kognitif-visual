@@ -161,6 +161,27 @@ export const id = {
     label: 'Suara',
   },
 
+  settings: {
+    open: 'Pengaturan tampilan',
+    title: 'Pengaturan',
+    body: 'Berlaku di perangkat ini dan tersimpan otomatis.',
+    largeText: 'Teks besar',
+    largeTextHint: 'Semua tulisan dan tombol ikut membesar.',
+    contrast: 'Kontras tinggi',
+    contrastHint: 'Latar putih, garis dan tulisan lebih tegas.',
+    sound: 'Suara',
+    soundHint: 'Nada saat menandai dan suara instruksi.',
+    on: 'Nyala',
+    off: 'Mati',
+    install: 'Pasang di tablet',
+    installHint:
+      'Setelah dipasang, aplikasi punya ikon sendiri dan bisa dibuka tanpa internet.',
+    installManual:
+      'Buka aplikasi ini lewat Chrome di tablet, lalu menu ⋮ → "Tambahkan ke layar utama".',
+    installed: 'Sudah terpasang di perangkat ini.',
+    close: 'Tutup',
+  },
+
   footer: {
     version: 'Versi awal',
     offline: 'Bisa dipakai tanpa internet',

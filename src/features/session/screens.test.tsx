@@ -88,8 +88,18 @@ describe('layar sesi', () => {
     expect(sound).not.toBeNull()
   })
 
-  it('layar profil pasien muncul saat ganti pasien', () => {
-    act(() => store().changePatient())
+  it('pengaturan tampilan bisa dibuka dari header dan punya tiga sakelar', () => {
+    const trigger = container.querySelector('header button[aria-label="Pengaturan tampilan"]')
+    expect(trigger).not.toBeNull()
+
+    act(() => (trigger as HTMLButtonElement).click())
+
+    expect(text()).toContain('Teks besar')
+    expect(text()).toContain('Kontras tinggi')
+    expect(container.querySelectorAll('[role="switch"]')).toHaveLength(3)
+  })
+
+  it('layar profil pasien muncul saat ganti pasien', () => {    act(() => store().changePatient())
 
     expect(text()).toContain('Pilih profil')
     expect(text()).toContain('Kode pasien')

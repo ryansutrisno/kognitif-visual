@@ -29,7 +29,7 @@ export function BoardGrid({ board, marks, falsePositiveIds, onToggle }: BoardGri
 
   const style = {
     '--cell': [
-      `max(2.5rem, min(${cellMax}`,
+      `max(44px, min(${cellMax}`,
       `calc((100dvh - ${verticalBudget} - ${board.rows - 1} * ${gap}) / ${board.rows})`,
       `calc((100vw - 3rem - ${board.cols - 1} * ${gap}) / ${board.cols})))`,
     ].join(', '),

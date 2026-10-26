@@ -1,5 +1,5 @@
 import { create } from 'zustand'
-import type { SessionRecord } from '../../lib/db'
+import { saveSessionRecord, type SessionRecord } from '../../lib/db'
 import { getLevel } from '../levels/config'
 import { generateBoard } from '../levels/generateBoard'
 import { generatePracticeBoard } from '../levels/practice'
@@ -91,19 +91,17 @@ function elapsedSince(startedAt: number | null, now: number): number {
 
 /**
  * Penyimpanan sesi bisa diganti dari luar (dipakai test), tetapi default-nya
- * memuat Dexie saat dipanggil — bukan saat modul dievaluasi. Ini penting:
- * kalau penyimpanan di-wire sekali di main.tsx, hot-reload store akan
- * mengembalikannya ke no-op dan sesi hilang tanpa jejak.
+ * memanggil Dexie langsung saat menyimpan — bukan saat modul dievaluasi.
+ * Sebelumnya penyimpanan di-wire sekali di main.tsx; hot-reload store
+ * mengembalikannya ke no-op dan seluruh sesi hilang tanpa jejak.
  */
 type SessionSaver = (record: SessionRecord) => unknown
 
 let sessionSaver: SessionSaver = (record) => {
-  void import('../../lib/db')
-    .then((module) => module.saveSessionRecord(record))
-    .catch(() => {
-      // Penyimpanan tidak tersedia (mode privat / kuota penuh): jangan
-      // sampai menghentikan alur pasien.
-    })
+  void Promise.resolve(saveSessionRecord(record)).catch(() => {
+    // Penyimpanan tidak tersedia (mode privat / kuota penuh): jangan
+    // sampai menghentikan alur pasien.
+  })
 }
 
 export function setSessionSaver(saver: SessionSaver): void {
