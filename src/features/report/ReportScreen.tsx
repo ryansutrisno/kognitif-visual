@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { SelectMenu } from '../../components/SelectMenu'
 import { downloadCsv, sessionsToCsv } from '../../lib/csv'
 import { listPatients, listSessions, type Patient, type SessionRecord } from '../../lib/db'
 import { id } from '../../lib/i18n/id'
@@ -106,21 +107,17 @@ export function ReportScreen() {
       )}
 
       {patients !== null && patients.length > 0 && (
-        <label className="flex max-w-sm flex-col gap-1.5 text-sm font-medium text-ink-soft">
-          {id.report.pick}
-          <select
-            value={selected ?? ''}
-            onChange={(event) => setSelected(event.target.value || null)}
-            className="min-h-12 rounded-xl border-2 border-[color:var(--color-line-soft)] bg-paper px-3 text-base text-ink"
-          >
-            {patients.map((patient) => (
-              <option key={patient.code} value={patient.code}>
-                {patient.code}
-                {patient.initials ? ` · ${patient.initials}` : ''}
-              </option>
-            ))}
-          </select>
-        </label>
+        <SelectMenu
+          label={id.report.pick}
+          value={selected}
+          options={patients.map((patient) => ({
+            value: patient.code,
+            label: patient.initials
+              ? `${patient.code} · ${patient.initials}`
+              : patient.code,
+          }))}
+          onChange={(code) => setSelected(code)}
+        />
       )}
 
       {sessions === null && patients !== null && patients.length > 0 && (
