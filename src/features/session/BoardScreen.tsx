@@ -1,82 +1,43 @@
-import { useMemo, useState } from 'react'
+import { useState } from 'react'
+import { Dialog } from '../../components/Dialog'
 import { id } from '../../lib/i18n/id'
-import { generateBoard } from '../levels/generateBoard'
 import { getLevel } from '../levels/config'
-import { randomSeed } from '../levels/rng'
-import type { Cell, LevelId } from '../levels/types'
 import { BoardGrid } from './BoardGrid'
-import { computeScore, starsFor, type Score } from './scoring'
-
-interface BoardScreenProps {
-  levelId: LevelId
-  onExit: () => void
-}
+import { BOARDS_PER_SESSION, useSession } from './store'
 
 /**
- * F1: satu papan yang bisa dimainkan, skor dikirim ke console.
- * F2 akan memakai store Zustand (3 papan, hasil, istirahat) menggantikan
- * state lokal di komponen ini.
+ * Papan yang sedang dimainkan. Seluruh state (tanda, skor, timer) ada di
+ * store sesi; komponen ini hanya merender dan meneruskan tap.
  */
-export function BoardScreen({ levelId, onExit }: BoardScreenProps) {
+export function BoardScreen() {
+  const status = useSession((state) => state.status)
+  const levelId = useSession((state) => state.levelId)
+  const board = useSession((state) => state.board)
+  const boardIndex = useSession((state) => state.boardIndex)
+  const marks = useSession((state) => state.marks)
+  const falsePositiveIds = useSession((state) => state.falsePositiveIds)
+  const tap = useSession((state) => state.tap)
+  const pause = useSession((state) => state.pause)
+  const resume = useSession((state) => state.resume)
+  const finishBoard = useSession((state) => state.finishBoard)
+  const endSession = useSession((state) => state.endSession)
+
+  const [confirmExit, setConfirmExit] = useState(false)
+
+  if (levelId === null || board === null) return null
+
   const config = getLevel(levelId)
-  const [seed, setSeed] = useState(() => randomSeed())
-  const board = useMemo(() => generateBoard(config, seed), [config, seed])
-
-  const [marks, setMarks] = useState<ReadonlySet<string>>(() => new Set<string>())
-  const [falsePositiveIds, setFalsePositiveIds] = useState<ReadonlySet<string>>(
-    () => new Set<string>(),
-  )
-  const [score, setScore] = useState<Score | null>(null)
-
-  const finished = score !== null
-
-  function toggleCell(cell: Cell) {
-    if (finished) return
-
-    setMarks((prev) => {
-      const next = new Set(prev)
-      if (next.has(cell.id)) {
-        next.delete(cell.id)
-        return next
-      }
-
-      next.add(cell.id)
-
-      // Tap pertama pada bukan-target tetap dicatat walau nanti dibatalkan.
-      if (!cell.isTarget) {
-        setFalsePositiveIds((prevWrong) => {
-          if (prevWrong.has(cell.id)) return prevWrong
-          const nextWrong = new Set(prevWrong)
-          nextWrong.add(cell.id)
-          return nextWrong
-        })
-      }
-
-      return next
-    })
-  }
-
-  function finish() {
-    const result = computeScore({ board, marks, falsePositiveIds })
-    setScore(result)
-    console.info('[Kognitif] skor papan', result, 'bintang:', starsFor(result))
-  }
-
-  function playAgain() {
-    setSeed(randomSeed())
-    setMarks(new Set<string>())
-    setFalsePositiveIds(new Set<string>())
-    setScore(null)
-  }
-
+  const paused = status === 'paused'
   const found = marks.size
+  const targets = board.cells.reduce((count, cell) => (cell.isTarget ? count + 1 : count), 0)
+  const compact = board.rows >= 10
 
   return (
-    <section className="flex w-full max-w-4xl flex-col gap-6">
-      <div className="flex items-center justify-between gap-4">
+    <section className="flex w-full flex-col gap-3">
+      <div className="flex items-center justify-between gap-3">
         <button
           type="button"
-          onClick={onExit}
+          onClick={() => setConfirmExit(true)}
           className="inline-flex min-h-12 items-center gap-2 rounded-xl px-3 text-base font-medium text-ink-soft hover:bg-paper-sunken"
         >
           <svg viewBox="0 0 24 24" className="size-5" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
@@ -84,104 +45,88 @@ export function BoardScreen({ levelId, onExit }: BoardScreenProps) {
           </svg>
           {id.board.back}
         </button>
-        <span className="text-sm font-medium tracking-wide text-ink-muted uppercase">
-          {config.label}
-        </span>
+
+        <div className="flex items-center gap-2">
+          <span className="text-sm font-medium tracking-wide text-ink-muted uppercase">
+            {config.label} · {id.board.boardOf(boardIndex + 1, BOARDS_PER_SESSION)}
+          </span>
+          <button
+            type="button"
+            onClick={pause}
+            disabled={paused}
+            className="inline-flex min-h-11 items-center rounded-xl border-2 border-line-soft px-4 text-sm font-medium text-ink-soft hover:border-line disabled:opacity-40"
+          >
+            {id.board.pause}
+          </button>
+        </div>
       </div>
 
-      <div className="rounded-card border-2 border-[color:var(--color-line)] bg-paper-raised px-5 py-6 sm:px-8 sm:py-8">
-        <h1 className="font-display text-2xl font-semibold tracking-tight">{id.board.instruction}</h1>
-        <p className="mt-2 text-base text-ink-muted">{id.board.hint}</p>
+      <div className="rounded-card border-2 border-[color:var(--color-line)] bg-paper-raised px-4 py-4 sm:px-6 sm:py-5">
+        <div className="flex flex-wrap items-baseline justify-between gap-2">
+          <h1 className={compact ? 'font-display text-lg font-semibold' : 'font-display text-2xl font-semibold'}>
+            {id.board.instruction}
+          </h1>
+          {!compact && <p className="text-sm text-ink-muted">{id.board.hint}</p>}
+        </div>
 
-        <div className="mt-6">
+        <div className="mt-4">
           <BoardGrid
             board={board}
             marks={marks}
             falsePositiveIds={falsePositiveIds}
-            onToggle={toggleCell}
+            onToggle={tap}
           />
         </div>
 
-        {!finished && (
-          <div className="mt-7 flex flex-wrap items-center justify-between gap-3">
-            <p className="text-sm text-ink-muted">
-              {found === 0 ? '' : id.board.progress(found, board.cells.filter((c) => c.isTarget).length)}
-            </p>
-            <button
-              type="button"
-              onClick={finish}
-              className="inline-flex min-h-14 items-center justify-center rounded-xl bg-ink px-8 text-lg font-medium text-paper"
-            >
-              {id.board.finish}
-            </button>
-          </div>
-        )}
-
-        {score && (
-          <ScorePanel score={score} onPlayAgain={playAgain} onExit={onExit} />
-        )}
+        <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
+          <p className="text-sm text-ink-muted">{found === 0 ? '' : id.board.progress(found, targets)}</p>
+          <button
+            type="button"
+            onClick={finishBoard}
+            className="inline-flex min-h-14 items-center justify-center rounded-xl bg-ink px-8 text-lg font-medium text-paper"
+          >
+            {id.board.finish}
+          </button>
+        </div>
       </div>
+
+      {paused && !confirmExit && (
+        <Dialog title={id.pauseOverlay.title} body={id.pauseOverlay.body}>
+          <button
+            type="button"
+            onClick={resume}
+            className="inline-flex min-h-14 items-center justify-center rounded-xl bg-ink px-6 text-lg font-medium text-paper"
+          >
+            {id.pauseOverlay.resume}
+          </button>
+          <button
+            type="button"
+            onClick={() => setConfirmExit(true)}
+            className="inline-flex min-h-14 items-center justify-center rounded-xl border-2 border-line px-6 text-base font-medium text-ink"
+          >
+            {id.pauseOverlay.exit}
+          </button>
+        </Dialog>
+      )}
+
+      {confirmExit && (
+        <Dialog title={id.exit.title} body={id.exit.body}>
+          <button
+            type="button"
+            onClick={endSession}
+            className="inline-flex min-h-14 items-center justify-center rounded-xl border-2 border-miss px-6 text-base font-medium text-miss"
+          >
+            {id.exit.confirm}
+          </button>
+          <button
+            type="button"
+            onClick={() => setConfirmExit(false)}
+            className="inline-flex min-h-14 items-center justify-center rounded-xl bg-ink px-6 text-lg font-medium text-paper"
+          >
+            {id.exit.cancel}
+          </button>
+        </Dialog>
+      )}
     </section>
-  )
-}
-
-interface ScorePanelProps {
-  score: Score
-  onPlayAgain: () => void
-  onExit: () => void
-}
-
-/** Panel sementara F1 — F2 menggantinya dengan layar hasil (bintang) untuk pasien. */
-function ScorePanel({ score, onPlayAgain, onExit }: ScorePanelProps) {
-  const neglect =
-    score.neglectIndex === null ? id.result.neglectEmpty : score.neglectIndex.toFixed(2)
-
-  return (
-    <div className="mt-8 rounded-xl bg-paper-sunken px-5 py-6">
-      <div className="flex items-baseline justify-between gap-4">
-        <h2 className="font-display text-xl font-semibold">{id.result.title}</h2>
-        <span className="text-xs tracking-wide text-ink-muted uppercase">
-          {id.result.temporaryLabel}
-        </span>
-      </div>
-
-      <dl className="mt-4 grid grid-cols-2 gap-x-6 gap-y-2 text-sm sm:grid-cols-3">
-        <Row label={id.result.targets} value={score.targetsTotal} />
-        <Row label={id.result.hits} value={score.hits} />
-        <Row label={id.result.falsePositives} value={score.falsePositives} />
-        <Row label={id.result.omissions} value={score.omissionsTotal} />
-        <Row label={id.result.omissionsSplit} value={`${score.omissionsLeft} / ${score.omissionsRight}`} />
-        <Row label={id.result.neglect} value={neglect} />
-        <Row label={id.result.accuracy} value={`${Math.round(score.accuracy * 100)}%`} />
-      </dl>
-
-      <p className="mt-4 text-xs text-ink-muted">{id.result.temporaryNote}</p>
-
-      <div className="mt-5 flex flex-wrap gap-3">
-        <button
-          type="button"
-          onClick={onPlayAgain}
-          className="inline-flex min-h-14 items-center justify-center rounded-xl bg-ink px-7 text-base font-medium text-paper"
-        >
-          {id.result.playAgain}
-        </button>
-        <button
-          type="button"
-          onClick={onExit}
-          className="inline-flex min-h-14 items-center justify-center rounded-xl border-2 border-line px-7 text-base font-medium text-ink"
-        >
-          {id.result.finish}
-        </button>
-      </div>
-    </div>
-  )
-}
-
-function Row({ label, value }: { label: string; value: string | number }) {
-  return (
-    <div className="flex items-baseline justify-between gap-3 border-b border-line-soft pb-1">
-      <dt className="text-ink-muted">{label}</dt>
-      <dd className="font-medium tabular-nums text-ink">{value}</dd>
-    </div>
   )
 }

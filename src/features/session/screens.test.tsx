@@ -1,0 +1,120 @@
+// @vitest-environment jsdom
+import { act } from 'react'
+import { createRoot, type Root } from 'react-dom/client'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { App } from '../../app/App'
+import { useSession } from './store'
+
+declare global {
+  // React 19 memakai flag ini untuk mendukung act() di luar test runner library.
+  var IS_REACT_ACT_ENVIRONMENT: boolean | undefined
+}
+
+const store = () => useSession.getState()
+
+let container: HTMLDivElement
+let root: Root
+
+function mount() {
+  container = document.createElement('div')
+  document.body.appendChild(container)
+  root = createRoot(container)
+  act(() => {
+    root.render(<App />)
+  })
+}
+
+function text(): string {
+  return container.textContent ?? ''
+}
+
+/** Smoke test: setiap status sesi bisa dirender dan tombol utamanya ada. */
+describe('layar sesi', () => {
+  beforeEach(() => {
+    globalThis.IS_REACT_ACT_ENVIRONMENT = true
+    store().endSession()
+    vi.spyOn(console, 'info').mockImplementation(() => {})
+    mount()
+  })
+
+  afterEach(() => {
+    act(() => root.unmount())
+    container.remove()
+    vi.restoreAllMocks()
+  })
+
+  it('menampilkan pilihan tiga level', () => {
+    expect(text()).toContain('Pilih level')
+    expect(text()).toContain('Level 1')
+    expect(text()).toContain('Level 2')
+    expect(text()).toContain('Level 3')
+  })
+
+  it('menampilkan layar instruksi setelah level dipilih', () => {
+    act(() => store().selectLevel(2))
+
+    expect(text()).toContain('Cara bermain')
+    expect(text()).toContain('Siap, mulai')
+    expect(text()).toContain('Papan 1 dari 3')
+  })
+
+  it('menampilkan papan dengan satu tombol per kotak', () => {
+    act(() => {
+      store().selectLevel(3)
+      store().beginBoard()
+    })
+
+    const cells = store().board?.cells.length ?? 0
+    expect(text()).toContain('Tandai semua lingkaran.')
+    expect(container.querySelectorAll('button[aria-pressed]')).toHaveLength(cells)
+  })
+
+  it('menampilkan layar hasil tanpa angka omisi dan tanpa kata salah', () => {
+    act(() => {
+      store().selectLevel(1)
+      store().beginBoard()
+      store().finishBoard()
+    })
+
+    expect(text()).toContain('Papan selesai')
+    const starLabels = [...container.querySelectorAll('[role="img"]')].map((element) =>
+      element.getAttribute('aria-label'),
+    )
+    expect(starLabels).toContain('1 dari 3 bintang')
+    expect(text()).toContain('Ayo coba lagi pelan-pelan')
+    expect(text()).toContain('Papan berikutnya')
+    expect(text()).not.toContain('Terlewat')
+    expect(text()).not.toContain('salah')
+  })
+
+  it('menampilkan layar istirahat dengan hitungan detik', () => {
+    act(() => {
+      store().selectLevel(1)
+      store().beginBoard()
+      store().finishBoard()
+      store().openRest()
+    })
+
+    expect(text()).toContain('Istirahat sebentar')
+    expect(text()).toContain('30 detik')
+    expect(text()).toContain('Sudah siap')
+  })
+
+  it('jeda menampilkan dialog lanjutkan', () => {
+    act(() => {
+      store().selectLevel(1)
+      store().beginBoard()
+      store().pause()
+    })
+
+    expect(text()).toContain('Latihan dijeda')
+    expect(container.querySelector('[role="alertdialog"]')).not.toBeNull()
+
+    const resume = [...container.querySelectorAll('button')].find((button) =>
+      button.textContent?.includes('Lanjutkan'),
+    )
+    act(() => resume?.click())
+
+    expect(store().status).toBe('running')
+  })
+})

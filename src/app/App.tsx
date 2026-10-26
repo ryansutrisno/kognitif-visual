@@ -1,17 +1,20 @@
-import { useState } from 'react'
 import { LogoMark } from '../components/LogoMark'
 import { BoardScreen } from '../features/session/BoardScreen'
-import { WelcomeScreen } from '../features/session/WelcomeScreen'
+import { InstructionScreen } from '../features/session/InstructionScreen'
+import { LevelSelectScreen } from '../features/session/LevelSelectScreen'
+import { RestScreen } from '../features/session/RestScreen'
+import { ResultScreen } from '../features/session/ResultScreen'
+import { useSession } from '../features/session/store'
+import { useAutoPause } from '../features/session/useAutoPause'
 import { id } from '../lib/i18n/id'
 
-type View = 'welcome' | 'board'
-
 /**
- * Shell aplikasi. Navigasi masih minimal (buka papan L1) — alur penuh
- * (profil → level → instruksi → papan → hasil) masuk di F2.
+ * Shell aplikasi. Navigasi diturunkan dari status sesi di store:
+ * pilih level → instruksi → papan → hasil → (istirahat) → papan berikutnya.
  */
 export function App() {
-  const [view, setView] = useState<View>('welcome')
+  const status = useSession((state) => state.status)
+  useAutoPause()
 
   return (
     <div className="flex min-h-dvh flex-col bg-paper">
@@ -22,28 +25,26 @@ export function App() {
         {id.a11y.skipToContent}
       </a>
 
-      <header className="flex items-center justify-between px-6 py-4 sm:px-10">
+      <header className="flex items-center justify-between px-5 py-3 sm:px-8">
         <div className="flex items-center gap-2 text-ink-muted">
           <LogoMark className="size-7 text-ink" />
-          <span className="text-sm font-medium tracking-wide uppercase">
-            {id.app.tagline}
-          </span>
+          <span className="text-sm font-medium tracking-wide uppercase">{id.app.tagline}</span>
         </div>
         <span className="text-sm text-ink-muted">{id.footer.offline}</span>
       </header>
 
       <main
         id="konten"
-        className="flex flex-1 items-start justify-center px-6 py-6 sm:px-10 sm:py-10"
+        className="flex flex-1 items-start justify-center px-4 py-4 sm:px-8 sm:py-6"
       >
-        {view === 'welcome' ? (
-          <WelcomeScreen onStart={() => setView('board')} />
-        ) : (
-          <BoardScreen levelId={1} onExit={() => setView('welcome')} />
-        )}
+        {(status === 'level-select' || status === 'practice') && <LevelSelectScreen />}
+        {status === 'instruction' && <InstructionScreen />}
+        {(status === 'running' || status === 'paused') && <BoardScreen />}
+        {status === 'finished' && <ResultScreen />}
+        {status === 'rest' && <RestScreen />}
       </main>
 
-      <footer className="px-6 pb-6 sm:px-10">
+      <footer className="px-5 pb-4 sm:px-8">
         <p className="text-xs text-ink-muted">
           {id.app.name} · {id.footer.version}
         </p>
