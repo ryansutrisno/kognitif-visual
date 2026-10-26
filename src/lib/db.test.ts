@@ -1,5 +1,14 @@
 import { beforeEach, describe, expect, it } from 'vitest'
-import { addPatient, db, listPatients, listSessions, normalizeCode, saveSessionRecord } from './db'
+import {
+  addPatient,
+  db,
+  deleteAllData,
+  deletePatient,
+  listPatients,
+  listSessions,
+  normalizeCode,
+  saveSessionRecord,
+} from './db'
 import type { SessionRecord } from './db'
 
 function record(partial: Partial<SessionRecord>): SessionRecord {
@@ -58,5 +67,29 @@ describe('penyimpanan Dexie', () => {
     const history = await listSessions('PS-001')
     expect(history).toHaveLength(1)
     expect(history[0]?.hits).toBe(9)
+  })
+
+  it('menghapus satu pasien beserta sesinya, tanpa menyentuh pasien lain', async () => {
+    await addPatient({ code: 'PS-001', initials: 'A. S.' })
+    await addPatient({ code: 'PS-002', initials: 'B. P.' })
+    await saveSessionRecord(record({ sessionId: 'ses-a', patientCode: 'PS-001' }))
+    await saveSessionRecord(record({ sessionId: 'ses-b', patientCode: 'PS-002' }))
+
+    await deletePatient('PS-001')
+
+    expect((await listPatients()).map((patient) => patient.code)).toEqual(['PS-002'])
+    expect(await listSessions('PS-001')).toHaveLength(0)
+    expect(await listSessions('PS-002')).toHaveLength(1)
+  })
+
+  it('menghapus seluruh profil dan sesi sekaligus', async () => {
+    await addPatient({ code: 'PS-001', initials: 'A. S.' })
+    await addPatient({ code: 'PS-002', initials: 'B. P.' })
+    await saveSessionRecord(record({ sessionId: 'ses-a' }))
+
+    await deleteAllData()
+
+    expect(await listPatients()).toHaveLength(0)
+    expect(await db.sessions.count()).toBe(0)
   })
 })

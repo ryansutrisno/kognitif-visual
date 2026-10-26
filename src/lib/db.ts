@@ -97,3 +97,22 @@ export async function listAllSessions(): Promise<SessionRecord[]> {
   const rows = await db.sessions.toArray()
   return rows.sort((a, b) => a.startedAt - b.startedAt)
 }
+
+/**
+ * Hapus satu pasien beserta seluruh riwayatnya. Sesi ikut dihapus supaya tidak
+ * ada baris "yatim" yang muncul di laporan.
+ */
+export async function deletePatient(code: string): Promise<void> {
+  await db.transaction('rw', db.patients, db.sessions, async () => {
+    await db.sessions.where('patientCode').equals(code).delete()
+    await db.patients.delete(code)
+  })
+}
+
+/** Hapus semua profil & sesi. Dipakai saat tablet dipinjamkan / reset. */
+export async function deleteAllData(): Promise<void> {
+  await db.transaction('rw', db.patients, db.sessions, async () => {
+    await db.sessions.clear()
+    await db.patients.clear()
+  })
+}

@@ -79,6 +79,18 @@ export const id = {
     legendRight: 'kanan',
     export: 'Ekspor CSV',
     close: 'Tutup',
+    manage: 'Kelola data',
+    manageHint: 'Penghapusan bersifat permanen dan tidak bisa dibatalkan.',
+    deletePatient: 'Hapus pasien ini',
+    deleteAll: 'Hapus semua data',
+    deletePatientTitle: 'Hapus profil ini?',
+    deletePatientBody: (code: string) =>
+      `Profil ${code} beserta seluruh riwayat sesinya akan dihapus permanen dari perangkat ini.`,
+    deleteAllTitle: 'Hapus semua data?',
+    deleteAllBody:
+      'Semua profil pasien dan seluruh riwayat sesi akan dihapus permanen dari perangkat ini.',
+    deleteConfirm: 'Ya, hapus',
+    deleteCancel: 'Batal',
   },
 
   guide: {

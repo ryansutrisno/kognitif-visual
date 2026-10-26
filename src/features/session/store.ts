@@ -65,6 +65,7 @@ interface SessionState {
 
   saveCurrentSession: () => void
   selectPatient: (patientCode: string) => void
+  clearPatient: () => void
   changePatient: () => void
   openReport: () => void
   closeReport: () => void
@@ -185,6 +186,29 @@ export const useSession = create<SessionState>((set, get) => ({
 
   changePatient: () =>
     set({ status: 'patient-select', levelId: null, board: null, boardScores: [] }),
+
+  /** Profil dihapus dari penyimpanan: lupakan tanpa menyimpan sesi apa pun. */
+  clearPatient: () =>
+    set({
+      status: 'patient-select',
+      patientCode: null,
+      levelId: null,
+      boardIndex: 0,
+      board: null,
+      marks: EMPTY,
+      falsePositiveIds: EMPTY,
+      lastScore: null,
+      boardScores: [],
+      boardDurationsMs: [],
+      sessionStartedAt: null,
+      activeMs: 0,
+      boardActiveMs: 0,
+      runStartedAt: null,
+      practiceBoard: null,
+      practiceMarks: EMPTY,
+      sessionId: null,
+      sessionSaved: true,
+    }),
 
   openReport: () => set({ status: 'report' }),
 

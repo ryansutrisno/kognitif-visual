@@ -1,7 +1,15 @@
 import { useEffect, useState } from 'react'
+import { Dialog } from '../../components/Dialog'
 import { SelectMenu } from '../../components/SelectMenu'
 import { downloadCsv, sessionsToCsv } from '../../lib/csv'
-import { listPatients, listSessions, type Patient, type SessionRecord } from '../../lib/db'
+import {
+  deleteAllData,
+  deletePatient,
+  listPatients,
+  listSessions,
+  type Patient,
+  type SessionRecord,
+} from '../../lib/db'
 import { id } from '../../lib/i18n/id'
 import { useSession } from '../session/store'
 import { sessionAccuracy } from './aggregate'
@@ -25,12 +33,15 @@ function formatDate(timestamp: number): string {
 export function ReportScreen() {
   const storePatient = useSession((state) => state.patientCode)
   const closeReport = useSession((state) => state.closeReport)
+  const clearPatient = useSession((state) => state.clearPatient)
 
   const [patients, setPatients] = useState<Patient[] | null>(null)
   const [selected, setSelected] = useState<string | null>(storePatient)
   // Baris disimpan bersama kode pasiennya, jadi status "memuat" cukup diturunkan
   // saat render — tidak perlu setState sinkron di dalam effect.
   const [loaded, setLoaded] = useState<{ code: string; rows: SessionRecord[] } | null>(null)
+  const [reloadToken, setReloadToken] = useState(0)
+  const [confirm, setConfirm] = useState<'patient' | 'all' | null>(null)
 
   useEffect(() => {
     let alive = true
@@ -39,9 +50,16 @@ export function ReportScreen() {
       .then((rows) => {
         if (!alive) return
         setPatients(rows)
-        // Kalau belum ada pasien terpilih, buka yang pertama supaya tabel
-        // tidak kosong padahal datanya ada.
-        setSelected((current) => current ?? rows[0]?.code ?? null)
+        // Kalau belum ada pasien terpilih — atau yang terpilih baru saja
+        // dihapus — buka yang pertama supaya tabel tidak kosong palsu.
+        // Daftar kosong tidak boleh menghapus pilihan: bisa jadi datanya
+        // memang belum termuat, bukan terhapus.
+        setSelected((current) => {
+          if (current && (rows.length === 0 || rows.some((row) => row.code === current))) {
+            return current
+          }
+          return rows[0]?.code ?? null
+        })
       })
       .catch(() => {
         if (alive) setPatients([])
@@ -50,7 +68,7 @@ export function ReportScreen() {
     return () => {
       alive = false
     }
-  }, [])
+  }, [reloadToken])
 
   useEffect(() => {
     if (!selected) return
@@ -74,6 +92,32 @@ export function ReportScreen() {
   const sessions = selected && loaded?.code === selected ? loaded.rows : null
   const newest = sessions === null ? [] : [...sessions].reverse()
   const activePatient = patients?.find((item) => item.code === selected) ?? null
+
+  const reload = () => {
+    setLoaded(null)
+    setReloadToken((token) => token + 1)
+  }
+
+  const handleDeletePatient = async () => {
+    if (!selected) return
+    const code = selected
+    await deletePatient(code)
+    setConfirm(null)
+
+    // Kalau yang dihapus adalah pasien yang sedang aktif, store harus
+    // melupakannya — kalau tidak, sesi berikutnya akan menulis ke kode hantu.
+    if (storePatient === code) {
+      clearPatient()
+      return
+    }
+    reload()
+  }
+
+  const handleDeleteAll = async () => {
+    await deleteAllData()
+    setConfirm(null)
+    clearPatient()
+  }
 
   return (
     <section className="flex w-full max-w-5xl flex-col gap-5">
@@ -198,6 +242,72 @@ export function ReportScreen() {
             </button>
           </div>
         </>
+      )}
+
+      <div className="mt-1 rounded-card border-2 border-[color:var(--color-line-soft)] bg-paper-raised px-5 py-5">
+        <h2 className="text-sm font-semibold tracking-wide text-ink-muted uppercase">
+          {id.report.manage}
+        </h2>
+        <p className="mt-1 text-sm text-ink-soft">{id.report.manageHint}</p>
+
+        <div className="mt-4 flex flex-wrap gap-3">
+          <button
+            type="button"
+            disabled={!selected}
+            onClick={() => setConfirm('patient')}
+            className="inline-flex min-h-12 items-center justify-center rounded-xl border-2 border-[color:var(--color-miss)] px-5 text-base font-medium text-miss disabled:opacity-40"
+          >
+            {id.report.deletePatient}
+          </button>
+          <button
+            type="button"
+            onClick={() => setConfirm('all')}
+            className="inline-flex min-h-12 items-center justify-center rounded-xl border-2 border-[color:var(--color-miss)] px-5 text-base font-medium text-miss"
+          >
+            {id.report.deleteAll}
+          </button>
+        </div>
+      </div>
+
+      {confirm === 'patient' && selected && (
+        <Dialog
+          title={id.report.deletePatientTitle}
+          body={id.report.deletePatientBody(selected)}
+        >
+          <button
+            type="button"
+            onClick={() => void handleDeletePatient()}
+            className="inline-flex min-h-14 items-center justify-center rounded-xl bg-miss px-6 text-lg font-medium text-paper"
+          >
+            {id.report.deleteConfirm}
+          </button>
+          <button
+            type="button"
+            onClick={() => setConfirm(null)}
+            className="inline-flex min-h-14 items-center justify-center rounded-xl bg-ink px-6 text-lg font-medium text-paper"
+          >
+            {id.report.deleteCancel}
+          </button>
+        </Dialog>
+      )}
+
+      {confirm === 'all' && (
+        <Dialog title={id.report.deleteAllTitle} body={id.report.deleteAllBody}>
+          <button
+            type="button"
+            onClick={() => void handleDeleteAll()}
+            className="inline-flex min-h-14 items-center justify-center rounded-xl bg-miss px-6 text-lg font-medium text-paper"
+          >
+            {id.report.deleteConfirm}
+          </button>
+          <button
+            type="button"
+            onClick={() => setConfirm(null)}
+            className="inline-flex min-h-14 items-center justify-center rounded-xl bg-ink px-6 text-lg font-medium text-paper"
+          >
+            {id.report.deleteCancel}
+          </button>
+        </Dialog>
       )}
     </section>
   )
