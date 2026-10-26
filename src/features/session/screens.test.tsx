@@ -33,6 +33,8 @@ describe('layar sesi', () => {
   beforeEach(() => {
     globalThis.IS_REACT_ACT_ENVIRONMENT = true
     store().endSession()
+    // Layar level butuh profil aktif; profilnya diisi langsung ke store.
+    store().selectPatient('PS-TEST')
     vi.spyOn(console, 'info').mockImplementation(() => {})
     mount()
   })
@@ -84,6 +86,24 @@ describe('layar sesi', () => {
   it('tombol suara selalu tersedia di header', () => {
     const sound = container.querySelector('header button[aria-pressed]')
     expect(sound).not.toBeNull()
+  })
+
+  it('layar profil pasien muncul saat ganti pasien', () => {
+    act(() => store().changePatient())
+
+    expect(text()).toContain('Pilih profil')
+    expect(text()).toContain('Kode pasien')
+    expect(text()).toContain('Tambah profil')
+  })
+
+  it('laporan terapis hanya berisi data klinis, dibuka lewat PIN', async () => {
+    act(() => store().openReport())
+    await act(async () => {
+      await new Promise((resolve) => setTimeout(resolve, 80))
+    })
+
+    expect(text()).toContain('Laporan sesi')
+    expect(text()).toContain('Belum ada sesi tersimpan untuk pasien ini.')
   })
 
   it('menampilkan layar hasil tanpa angka omisi dan tanpa kata salah', () => {

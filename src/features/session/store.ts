@@ -1,17 +1,22 @@
 import { create } from 'zustand'
+import type { SessionRecord } from '../../lib/db'
 import { getLevel } from '../levels/config'
 import { generateBoard } from '../levels/generateBoard'
 import { generatePracticeBoard } from '../levels/practice'
 import { randomSeed } from '../levels/rng'
 import type { Board, Cell, LevelId } from '../levels/types'
+import { aggregateSession } from '../report/aggregate'
 import { computeScore, type Score } from './scoring'
 
 /**
  * Status sesi (blueprint): satu union, transisi hanya lewat action.
- * `level-select` = layar pilih level, `rest` = layar istirahat di antara papan,
- * `practice` = papan latihan 3 kotak yang tidak dinilai.
+ * `patient-select` = pilih profil, `level-select` = pilih level,
+ * `rest` = layar istirahat di antara papan,
+ * `practice` = papan latihan 3 kotak yang tidak dinilai,
+ * `report` = laporan terapis (di balik PIN).
  */
 export type SessionStatus =
+  | 'patient-select'
   | 'level-select'
   | 'instruction'
   | 'practice'
@@ -19,6 +24,7 @@ export type SessionStatus =
   | 'paused'
   | 'finished'
   | 'rest'
+  | 'report'
 
 export const BOARDS_PER_SESSION = 3
 export const REST_SECONDS = 30
@@ -29,6 +35,8 @@ const EMPTY: ReadonlySet<string> = new Set<string>()
 
 interface SessionState {
   status: SessionStatus
+  /** Kode profil aktif; null = belum memilih pasien. */
+  patientCode: string | null
   levelId: LevelId | null
   /** 0-based, papan ke berapa dalam sesi ini. */
   boardIndex: number
@@ -51,6 +59,10 @@ interface SessionState {
   practiceBoard: Board | null
   practiceMarks: ReadonlySet<string>
 
+  selectPatient: (patientCode: string) => void
+  changePatient: () => void
+  openReport: () => void
+  closeReport: () => void
   selectLevel: (levelId: LevelId) => void
   beginPractice: () => void
   tapPractice: (cell: Cell) => void
@@ -72,8 +84,26 @@ function elapsedSince(startedAt: number | null, now: number): number {
   return startedAt === null ? 0 : Math.max(0, now - startedAt)
 }
 
-export const useSession = create<SessionState>((set) => ({
-  status: 'level-select',
+/**
+ * Penyimpanan sesi disuntikkan dari luar (main.tsx) supaya store tetap bisa
+ * diuji tanpa IndexedDB. Default: tidak menyimpan apa pun.
+ */
+type SessionSaver = (record: SessionRecord) => unknown
+
+let sessionSaver: SessionSaver = () => {}
+
+export function setSessionSaver(saver: SessionSaver): void {
+  sessionSaver = saver
+}
+
+function newSessionId(patientCode: string, startedAt: number): string {
+  const random = Math.random().toString(36).slice(2, 8)
+  return `${patientCode}-${startedAt}-${random}`
+}
+
+export const useSession = create<SessionState>((set, get) => ({
+  status: 'patient-select',
+  patientCode: null,
   levelId: null,
   boardIndex: 0,
   board: null,
@@ -88,6 +118,33 @@ export const useSession = create<SessionState>((set) => ({
   runStartedAt: null,
   practiceBoard: null,
   practiceMarks: EMPTY,
+
+  /** Terapis memilih profil → langsung masuk pilih level. */
+  selectPatient: (patientCode) =>
+    set({
+      status: 'level-select',
+      patientCode,
+      levelId: null,
+      board: null,
+      marks: EMPTY,
+      falsePositiveIds: EMPTY,
+      lastScore: null,
+      boardScores: [],
+      boardDurationsMs: [],
+      sessionStartedAt: null,
+      activeMs: 0,
+      boardActiveMs: 0,
+      runStartedAt: null,
+      practiceBoard: null,
+      practiceMarks: EMPTY,
+    }),
+
+  changePatient: () =>
+    set({ status: 'patient-select', levelId: null, board: null, boardScores: [] }),
+
+  openReport: () => set({ status: 'report' }),
+
+  closeReport: () => set({ status: 'level-select' }),
 
   /** Terapis memilih level → papan pertama disiapkan, layar instruksi tampil. */
   selectLevel: (levelId) =>
@@ -229,10 +286,33 @@ export const useSession = create<SessionState>((set) => ({
       }
     }),
 
-  /** Selesai / keluar → bersihkan sesi, kembali ke pilih level. */
-  endSession: () =>
+  /**
+   * Selesai / keluar → simpan sesi (jika sudah ada papan yang dinilai) lalu
+   * bersihkan. Profil pasien tetap terpilih supaya terapis bisa lanjut level lain.
+   */
+  endSession: () => {
+    const state = get()
+
+    if (state.patientCode && state.levelId && state.boardScores.length > 0) {
+      const record = aggregateSession({
+        sessionId: newSessionId(state.patientCode, state.sessionStartedAt ?? Date.now()),
+        patientCode: state.patientCode,
+        level: state.levelId,
+        startedAt: state.sessionStartedAt,
+        durationMs: state.activeMs,
+        boardScores: state.boardScores,
+        completed: state.boardScores.length >= BOARDS_PER_SESSION,
+      })
+
+      try {
+        void sessionSaver(record)
+      } catch {
+        // Penyimpanan penuh / mode privat: jangan sampai menghalangi keluar.
+      }
+    }
+
     set({
-      status: 'level-select',
+      status: state.patientCode ? 'level-select' : 'patient-select',
       levelId: null,
       boardIndex: 0,
       board: null,
@@ -247,7 +327,8 @@ export const useSession = create<SessionState>((set) => ({
       runStartedAt: null,
       practiceBoard: null,
       practiceMarks: EMPTY,
-    }),
+    })
+  },
 }))
 
 export function boardsRemaining(state: SessionState): number {

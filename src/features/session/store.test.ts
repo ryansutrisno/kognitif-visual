@@ -1,7 +1,15 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import type { SessionRecord } from '../../lib/db'
 import { getLevel } from '../levels/config'
 import type { Cell } from '../levels/types'
-import { BOARDS_PER_SESSION, SOFT_LIMIT_MS, boardsRemaining, isOverSoftLimit, useSession } from './store'
+import {
+  BOARDS_PER_SESSION,
+  SOFT_LIMIT_MS,
+  boardsRemaining,
+  isOverSoftLimit,
+  setSessionSaver,
+  useSession,
+} from './store'
 
 const store = () => useSession.getState()
 
@@ -20,6 +28,7 @@ describe('store sesi', () => {
     vi.useFakeTimers()
     vi.setSystemTime(new Date('2026-01-01T09:00:00Z'))
     store().endSession()
+    store().selectPatient('PS-TEST')
     vi.spyOn(console, 'info').mockImplementation(() => {})
   })
 
@@ -263,5 +272,43 @@ describe('store sesi', () => {
     expect(store().status).toBe('instruction')
     expect(store().practiceBoard).toBeNull()
     expect(store().practiceMarks.size).toBe(0)
+  })
+
+  it('menyimpan sesi ke penyimpanan saat keluar, dengan status completed yang jujur', () => {
+    const saved: SessionRecord[] = []
+    setSessionSaver((record) => {
+      saved.push(record as SessionRecord)
+    })
+
+    store().selectPatient('PS-001')
+    store().selectLevel(1)
+    store().beginBoard()
+    markAllTargets()
+    store().finishBoard()
+    store().endSession()
+    setSessionSaver(() => {})
+
+    expect(saved).toHaveLength(1)
+    expect(saved[0]?.patientCode).toBe('PS-001')
+    expect(saved[0]?.level).toBe(1)
+    expect(saved[0]?.hits).toBe(saved[0]?.targetsTotal)
+    // Baru satu papan dari tiga → sesi ditandai belum selesai.
+    expect(saved[0]?.completed).toBe(false)
+    expect(store().status).toBe('level-select')
+    expect(store().patientCode).toBe('PS-001')
+  })
+
+  it('tidak menyimpan apa pun kalau belum ada papan yang dinilai', () => {
+    const saved: SessionRecord[] = []
+    setSessionSaver((record) => {
+      saved.push(record as SessionRecord)
+    })
+
+    store().selectPatient('PS-001')
+    store().selectLevel(2)
+    store().endSession()
+    setSessionSaver(() => {})
+
+    expect(saved).toHaveLength(0)
   })
 })

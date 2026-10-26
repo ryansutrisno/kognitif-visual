@@ -1,14 +1,63 @@
+import { useEffect, useState } from 'react'
+import { listSessions, type SessionRecord } from '../../lib/db'
 import { id } from '../../lib/i18n/id'
 import { LEVELS, LEVEL_IDS } from '../levels/config'
 import type { LevelId } from '../levels/types'
+import { nextLevel, suggestsLevelUp } from '../report/aggregate'
 import { useSession } from './store'
 
-/** Layar pilih level — titik masuk aplikasi, dipakai terapis. */
+/**
+ * Layar pilih level — rumah kedua setelah profil dipilih.
+ * Di sini juga muncul saran naik level (tetap keputusan terapis).
+ */
 export function LevelSelectScreen() {
+  const patientCode = useSession((state) => state.patientCode)
   const selectLevel = useSession((state) => state.selectLevel)
+  const changePatient = useSession((state) => state.changePatient)
+
+  const [sessions, setSessions] = useState<SessionRecord[]>([])
+
+  useEffect(() => {
+    if (!patientCode) return
+    let alive = true
+
+    listSessions(patientCode)
+      .then((rows) => {
+        if (alive) setSessions(rows)
+      })
+      .catch(() => {
+        if (alive) setSessions([])
+      })
+
+    return () => {
+      alive = false
+    }
+  }, [patientCode])
+
+  const suggestedLevel = (() => {
+    for (const levelId of LEVEL_IDS) {
+      const target = nextLevel(levelId)
+      if (target && suggestsLevelUp(sessions, levelId)) return target
+    }
+    return null
+  })()
 
   return (
-    <section className="flex w-full max-w-3xl flex-col gap-8">
+    <section className="flex w-full max-w-3xl flex-col gap-6">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <p className="text-sm font-medium tracking-wide text-ink-muted uppercase">
+          {id.patients.current}:{' '}
+          <span className="text-ink">{patientCode ?? '—'}</span>
+        </p>
+        <button
+          type="button"
+          onClick={changePatient}
+          className="inline-flex min-h-11 items-center rounded-xl px-3 text-sm font-medium text-ink-soft underline decoration-2 underline-offset-4 hover:bg-paper-sunken"
+        >
+          {id.patients.change}
+        </button>
+      </div>
+
       <div>
         <h1 className="font-display text-3xl font-semibold tracking-tight text-ink sm:text-4xl">
           {id.levels.title}
@@ -17,6 +66,15 @@ export function LevelSelectScreen() {
           {id.levels.body}
         </p>
       </div>
+
+      {suggestedLevel !== null && (
+        <p
+          role="status"
+          className="rounded-2xl border-2 border-[color:var(--color-hit)] bg-hit-tint px-5 py-4 text-base font-medium text-hit"
+        >
+          {id.levels.suggest(suggestedLevel)}
+        </p>
+      )}
 
       <div className="rounded-card border-2 border-[color:var(--color-line)] bg-paper-raised px-6 py-7 sm:px-8 sm:py-8">
         <h2 className="font-display text-xl font-semibold text-ink">{id.levels.choose}</h2>

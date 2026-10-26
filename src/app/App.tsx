@@ -1,5 +1,7 @@
-import { LogoMark } from '../components/LogoMark'
 import { SoundToggle } from '../components/SoundToggle'
+import { PatientSelectScreen } from '../features/profiles/PatientSelectScreen'
+import { ReportGate } from '../features/report/ReportGate'
+import { ReportScreen } from '../features/report/ReportScreen'
 import { BoardScreen } from '../features/session/BoardScreen'
 import { InstructionScreen } from '../features/session/InstructionScreen'
 import { LevelSelectScreen } from '../features/session/LevelSelectScreen'
@@ -29,7 +31,7 @@ export function App() {
 
       <header className="flex items-center justify-between px-5 py-3 sm:px-8">
         <div className="flex items-center gap-2 text-ink-muted">
-          <LogoMark className="size-7 text-ink" />
+          <ReportGate />
           <span className="text-sm font-medium tracking-wide uppercase">{id.app.tagline}</span>
         </div>
         <div className="flex items-center gap-3">
@@ -42,12 +44,14 @@ export function App() {
         id="konten"
         className="flex flex-1 items-start justify-center px-4 py-4 sm:px-8 sm:py-6"
       >
+        {status === 'patient-select' && <PatientSelectScreen />}
         {status === 'level-select' && <LevelSelectScreen />}
         {status === 'instruction' && <InstructionScreen />}
         {status === 'practice' && <PracticeScreen />}
         {(status === 'running' || status === 'paused') && <BoardScreen />}
         {status === 'finished' && <ResultScreen />}
         {status === 'rest' && <RestScreen />}
+        {status === 'report' && <ReportScreen />}
       </main>
 
       <footer className="px-5 pb-4 sm:px-8">
