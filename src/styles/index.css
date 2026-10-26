@@ -1,0 +1,86 @@
+@import 'tailwindcss';
+
+/* ------------------------------------------------------------------
+   Design tokens — "kertas hangat"
+   Latar terang tapi tidak menyilaukan, garis gelap berkontras tinggi.
+   ------------------------------------------------------------------ */
+@theme {
+  --color-paper: #faf8f3;
+  --color-paper-raised: #ffffff;
+  --color-paper-sunken: #f1eee6;
+
+  --color-ink: #1f2937;
+  --color-ink-soft: #4b5563;
+  --color-ink-muted: #6b7280;
+
+  --color-line: #1f2937;
+  --color-line-soft: #d8d3c7;
+
+  --color-hit: #2f6b3c;
+  --color-hit-tint: #dce9dc;
+  --color-miss: #9b3b34;
+  --color-miss-tint: #f5dcd8;
+
+  --color-focus: #1d4ed8;
+
+  --radius-card: 1.25rem;
+
+  --font-sans:
+    'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  --font-display:
+    'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+}
+
+/* ------------------------------------------------------------------
+   Base
+   ------------------------------------------------------------------ */
+@layer base {
+  html {
+    -webkit-text-size-adjust: 100%;
+  }
+
+  body {
+    margin: 0;
+    min-height: 100dvh;
+    background-color: var(--color-paper);
+    color: var(--color-ink);
+    font-family: var(--font-sans);
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+    overscroll-behavior: none;
+  }
+
+  /* Pasien sering tremor / hemiparesis: hilangkan highlight & delay tap. */
+  button,
+  [role='button'] {
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  :focus-visible {
+    outline: 3px solid var(--color-focus);
+    outline-offset: 3px;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+      scroll-behavior: auto !important;
+    }
+  }
+}
+
+/* Mode kontras tinggi (toggle di pengaturan, lihat F5). */
+@layer utilities {
+  .contrast-high {
+    --color-paper: #ffffff;
+    --color-paper-sunken: #ffffff;
+    --color-line-soft: #1f2937;
+    --color-ink-soft: #1f2937;
+    --color-ink-muted: #1f2937;
+  }
+}
