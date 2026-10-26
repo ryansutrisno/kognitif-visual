@@ -1,10 +1,11 @@
 import { id } from '../../lib/i18n/id'
 
-/**
- * Layar pembuka sementara untuk F0.
- * Alur sesungguhnya (pilih profil → level → instruksi → papan) masuk di F1–F2.
- */
-export function WelcomeScreen() {
+interface WelcomeScreenProps {
+  onStart: () => void
+}
+
+/** Layar pembuka: penjelasan singkat + tombol mulai (Level 1). */
+export function WelcomeScreen({ onStart }: WelcomeScreenProps) {
   return (
     <section className="flex w-full max-w-2xl flex-col gap-8">
       <div className="flex items-center gap-4">
@@ -30,8 +31,8 @@ export function WelcomeScreen() {
         <div className="mt-9 flex flex-col items-start gap-3">
           <button
             type="button"
-            disabled
-            className="inline-flex min-h-16 items-center justify-center rounded-xl bg-ink px-10 text-lg font-medium text-paper disabled:opacity-40"
+            onClick={onStart}
+            className="inline-flex min-h-16 items-center justify-center rounded-xl bg-ink px-10 text-lg font-medium text-paper"
           >
             {id.welcome.start}
           </button>

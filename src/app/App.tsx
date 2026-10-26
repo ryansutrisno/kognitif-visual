@@ -1,8 +1,18 @@
+import { useState } from 'react'
 import { LogoMark } from '../components/LogoMark'
+import { BoardScreen } from '../features/session/BoardScreen'
 import { WelcomeScreen } from '../features/session/WelcomeScreen'
 import { id } from '../lib/i18n/id'
 
+type View = 'welcome' | 'board'
+
+/**
+ * Shell aplikasi. Navigasi masih minimal (buka papan L1) — alur penuh
+ * (profil → level → instruksi → papan → hasil) masuk di F2.
+ */
 export function App() {
+  const [view, setView] = useState<View>('welcome')
+
   return (
     <div className="flex min-h-dvh flex-col bg-paper">
       <a
@@ -24,9 +34,13 @@ export function App() {
 
       <main
         id="konten"
-        className="flex flex-1 items-center justify-center px-6 py-6 sm:px-10 sm:py-10"
+        className="flex flex-1 items-start justify-center px-6 py-6 sm:px-10 sm:py-10"
       >
-        <WelcomeScreen />
+        {view === 'welcome' ? (
+          <WelcomeScreen onStart={() => setView('board')} />
+        ) : (
+          <BoardScreen levelId={1} onExit={() => setView('welcome')} />
+        )}
       </main>
 
       <footer className="px-6 pb-6 sm:px-10">
