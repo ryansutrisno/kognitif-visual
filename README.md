@@ -282,6 +282,7 @@ git push -u origin main
 | `fatal: could not read Username` / `ENOGHPR` | `repository.url` di `package.json` tidak cocok dengan nama repo di GitHub |
 | `There are no relevant changes` | Tidak ada commit `feat:` / `fix:` yang belum pernah dirilis |
 | Rilis berikutnya jadi `1.0.1`, bukan `1.0.0` | Normal — satu tag hanya dibuat sekali; `1.0.0` sudah terpakai |
+| Run gagal di `git push refs/notes/semantic-release-*` (`remote rejected`) | Gangguan sementara dari GitHub. Tag, `CHANGELOG.md`, dan versi di `package.json` **sudah** terbuat; yang kurang hanya objek GitHub Release. Buat manual: `gh release create vX.Y.Z --generate-notes`, lalu rilis berikutnya berjalan normal |
 
 ## Deploy
 
