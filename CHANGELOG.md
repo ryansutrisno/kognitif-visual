@@ -1,3 +1,10 @@
+## [1.1.1](https://github.com/ryansutrisno/kognitif-visual/compare/v1.1.0...v1.1.1) (2026-10-27)
+
+
+### Bug Fixes
+
+* drop the baked version from the OG image so it never goes stale ([747a9ec](https://github.com/ryansutrisno/kognitif-visual/commit/747a9ece67650fd6b8d3f42293955024bee299e9))
+
 # [1.1.0](https://github.com/ryansutrisno/kognitif-visual/compare/v1.0.0...v1.1.0) (2026-10-27)
 
 
