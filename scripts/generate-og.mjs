@@ -8,7 +8,6 @@ import { chromium } from 'playwright'
 import { mkdir } from 'node:fs/promises'
 
 const OUT = 'public/og-image.png'
-const VERSION = process.env.npm_package_version ?? '1.0.0'
 
 function star() {
   const outer = 34
@@ -147,7 +146,7 @@ const html = `<!doctype html>
 
     <div class="footer">
       <span><b>trazmedia.com</b></span>
-      <span>Kognitif · v${VERSION}</span>
+      <span>Latihan kognitif pasca stroke</span>
     </div>
   </div>
 </body></html>`
