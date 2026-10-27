@@ -1,3 +1,10 @@
+# [1.1.0](https://github.com/ryansutrisno/kognitif-visual/compare/v1.0.0...v1.1.0) (2026-10-27)
+
+
+### Features
+
+* add Open Graph share image and social metadata ([f01dff0](https://github.com/ryansutrisno/kognitif-visual/commit/f01dff0c7b23eac8b2b7812e7609e2fa21a00f2c))
+
 # 1.0.0 (2026-10-27)
 
 
