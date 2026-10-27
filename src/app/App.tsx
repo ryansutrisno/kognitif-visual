@@ -14,6 +14,9 @@ import { useAutoPause } from '../features/session/useAutoPause'
 import { useSessionPersistence } from '../features/session/useSessionPersistence'
 import { id } from '../lib/i18n/id'
 
+/** Diambil sekali saat modul dimuat supaya render tetap murni. */
+const COPYRIGHT_YEAR = new Date().getFullYear()
+
 /**
  * Shell aplikasi. Navigasi diturunkan dari status sesi di store:
  * pilih level → instruksi → papan latihan → papan → hasil → (istirahat) → papan berikutnya.
@@ -68,9 +71,22 @@ export function App() {
       </main>
 
       {!focusMode && (
-        <footer className="px-5 pb-4 sm:px-8">
-          <p className="text-xs text-ink-muted">
+        <footer className="flex flex-wrap items-center gap-x-2 gap-y-1 px-5 pb-4 text-xs text-ink-muted sm:px-8">
+          <p>
             {id.app.name} · {id.footer.version}
+          </p>
+          <span aria-hidden="true">·</span>
+          <p>
+            {id.footer.copyright(COPYRIGHT_YEAR)}{' '}
+            <a
+              href={id.footer.creditUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="font-medium text-ink-soft underline decoration-2 underline-offset-2 hover:text-ink"
+            >
+              {id.footer.creditName}
+              <span className="sr-only"> {id.footer.creditNewTab}</span>
+            </a>
           </p>
         </footer>
       )}

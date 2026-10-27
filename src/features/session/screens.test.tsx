@@ -90,8 +90,7 @@ describe('layar sesi', () => {
     expect(sound).not.toBeNull()
   })
 
-  it('pengaturan tampilan bisa dibuka dari header dan punya tiga sakelar', () => {
-    const trigger = container.querySelector('header button[aria-label="Pengaturan tampilan"]')
+  it('pengaturan tampilan bisa dibuka dari header dan punya tiga sakelar', () => {    const trigger = container.querySelector('header button[aria-label="Pengaturan tampilan"]')
     expect(trigger).not.toBeNull()
 
     act(() => (trigger as HTMLButtonElement).click())
@@ -99,6 +98,18 @@ describe('layar sesi', () => {
     expect(text()).toContain('Teks besar')
     expect(text()).toContain('Kontras tinggi')
     expect(container.querySelectorAll('[role="switch"]')).toHaveLength(3)
+  })
+
+  it('footer mencantumkan kredit Trazmedia yang menuju situsnya', () => {
+    const link = container.querySelector<HTMLAnchorElement>(
+      'footer a[href="https://trazmedia.com"]',
+    )
+
+    expect(link).not.toBeNull()
+    expect(link?.textContent).toContain('Trazmedia')
+    expect(link?.target).toBe('_blank')
+    expect(link?.rel).toContain('noopener')
+    expect(container.querySelector('footer')?.textContent).toContain('©')
   })
 
   it('layar profil pasien muncul saat ganti pasien', () => {    act(() => store().changePatient())

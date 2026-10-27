@@ -197,6 +197,10 @@ export const id = {
   footer: {
     version: 'Versi awal',
     offline: 'Bisa dipakai tanpa internet',
+    copyright: (year: number) => `© ${year}`,
+    creditName: 'Trazmedia',
+    creditUrl: 'https://trazmedia.com',
+    creditNewTab: '(buka di tab baru)',
   },
 
   a11y: {
