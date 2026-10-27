@@ -266,6 +266,23 @@ atau jalankan workflow **Release** secara manual dari tab Actions (`workflow_dis
 >
 > Repo saat ini berada di `github.com/ryansutrisno/kognitif-visual`. Ketika nanti dipindahkan ke organisasi Trazmedia, cukup perbarui `repository.url` di `package.json` dan dua URL badge di README — perilisan tetap berjalan tanpa perubahan konfigurasi lain.
 
+Push pertama lewat SSH:
+
+```bash
+git remote add origin git@github.com:ryansutrisno/kognitif-visual.git
+git push -u origin main
+```
+
+### Jika rilis pertama tidak berjalan
+
+| Gejala | Penyebab & solusi |
+|--------|-------------------|
+| Workflow tidak muncul di tab Actions | Actions dinonaktifkan untuk repo, atau push bukan ke `main` |
+| `Resource not accessible by integration` | Settings → Actions → General → Workflow permissions → **Read and write permissions** |
+| `fatal: could not read Username` / `ENOGHPR` | `repository.url` di `package.json` tidak cocok dengan nama repo di GitHub |
+| `There are no relevant changes` | Tidak ada commit `feat:` / `fix:` yang belum pernah dirilis |
+| Rilis berikutnya jadi `1.0.1`, bukan `1.0.0` | Normal — satu tag hanya dibuat sekali; `1.0.0` sudah terpakai |
+
 ## Deploy
 
 Aplikasi ini adalah SPA statis — cocok untuk Vercel, Netlify, Cloudflare Pages, atau hosting statis mana pun.

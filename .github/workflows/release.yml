@@ -33,6 +33,10 @@ jobs:
 
       - name: Install
         run: npm ci
+        env:
+          # Playwright hanya dipakai untuk pemeriksaan lokal; jangan unduh
+          # browser 100 MB di runner CI.
+          PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: '1'
 
       - name: Unit tests
         run: npm test
@@ -41,6 +45,6 @@ jobs:
         run: npm run build
 
       - name: Semantic release
-        run: npx semantic-release
+        run: npm run release
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
