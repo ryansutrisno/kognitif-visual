@@ -304,6 +304,22 @@ Publish dir   : dist
 
 Keduanya perlu fallback SPA ke `index.html` (Workbox sudah menangani `navigateFallback` saat offline). Setelah terpasang sebagai PWA, aplikasi berjalan tanpa jaringan.
 
+### Pratinjau saat tautan dibagikan
+
+`public/og-image.png` (1200×630) dipakai sebagai thumbnail saat tautan dibagikan di WhatsApp, Telegram, LinkedIn, atau X, lengkap dengan judul dan deskripsi dari tag Open Graph di `index.html`.
+
+```bash
+npm run og           # render ulang thumbnail dari scripts/generate-og.mjs
+```
+
+URL di tag `og:image` dan `og:url` harus **absolut**. Nilainya diambil dari env `VITE_SITE_URL` saat build; bila tidak diisi, fallback ke `https://kognitif-visual.vercel.app`. Setelah aplikasi punya domain sendiri, set variabel itu di hosting:
+
+```
+VITE_SITE_URL = https://domain-anda.com
+```
+
+Cek hasilnya dengan [opengraph.xyz](https://www.opengraph.xyz/) atau buka `/og-image.png` langsung; sebagian platform menyimpan cache, jadi pratinjau lama bisa bertahan beberapa hari.
+
 ## Batasan dan rencana
 
 Sengaja **belum** ada di versi ini:

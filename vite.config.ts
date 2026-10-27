@@ -8,6 +8,16 @@ const pkg = JSON.parse(
   readFileSync(new URL('./package.json', import.meta.url), 'utf8'),
 ) as { version: string }
 
+/**
+ * Alamat publik aplikasi. Dipakai untuk URL absolut og:image/og:url — sebagian
+ * platform (WhatsApp, LinkedIn, X) tidak mau menerima URL relatif.
+ * Ubah lewat env `VITE_SITE_URL` saat build di hosting.
+ */
+const SITE_URL = (process.env.VITE_SITE_URL ?? 'https://kognitif-visual.vercel.app').replace(
+  /\/+$/,
+  '',
+)
+
 // https://vite.dev/config/
 export default defineConfig({
   define: {
@@ -18,6 +28,13 @@ export default defineConfig({
     setupFiles: ['./src/test/setup.ts'],
   },
   plugins: [
+    {
+      name: 'kognitif-site-url',
+      transformIndexHtml: {
+        order: 'pre',
+        handler: (html: string) => html.replaceAll('__SITE_URL__', SITE_URL),
+      },
+    },
     react(),
     tailwindcss(),
     VitePWA({
@@ -60,6 +77,9 @@ export default defineConfig({
       },
       workbox: {
         globPatterns: ['**/*.{js,css,html,svg,png,woff,woff2}'],
+        // Gambar OG hanya dipakai crawler media sosial, tidak perlu ikut
+        // diprecache ke setiap perangkat.
+        globIgnores: ['**/og-image.png'],
         navigateFallback: 'index.html',
         cleanupOutdatedCaches: true,
       },
