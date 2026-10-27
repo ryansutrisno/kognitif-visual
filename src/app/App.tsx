@@ -13,6 +13,7 @@ import { useSession } from '../features/session/store'
 import { useAutoPause } from '../features/session/useAutoPause'
 import { useSessionPersistence } from '../features/session/useSessionPersistence'
 import { id } from '../lib/i18n/id'
+import { versionLabel } from '../lib/version'
 
 /** Diambil sekali saat modul dimuat supaya render tetap murni. */
 const COPYRIGHT_YEAR = new Date().getFullYear()
@@ -73,7 +74,7 @@ export function App() {
       {!focusMode && (
         <footer className="flex flex-wrap items-center gap-x-2 gap-y-1 px-5 pb-4 text-xs text-ink-muted sm:px-8">
           <p>
-            {id.app.name} · {id.footer.version}
+            {id.app.name} · {id.footer.version(versionLabel())}
           </p>
           <span aria-hidden="true">·</span>
           <p>

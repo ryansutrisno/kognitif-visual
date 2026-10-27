@@ -195,7 +195,8 @@ export const id = {
   },
 
   footer: {
-    version: 'Versi awal',
+    /** Versi diisi dari package.json saat build, bukan teks statis. */
+    version: (label: string) => label,
     offline: 'Bisa dipakai tanpa internet',
     copyright: (year: number) => `© ${year}`,
     creditName: 'Trazmedia',
